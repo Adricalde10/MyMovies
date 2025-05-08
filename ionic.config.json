@@ -1,0 +1,7 @@
+{
+  "name": "mymovies",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
