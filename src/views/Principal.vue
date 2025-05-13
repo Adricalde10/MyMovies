@@ -7,24 +7,56 @@
           <span>MyMovies</span>
         </ion-title>
 
+        <!-- Buscador -->
+      <!-- CONTENEDOR DEL BUSCADOR + RESULTADOS -->
+      <div class="px-4 pt-4">
+        <!-- BUSCADOR -->
         <ion-searchbar
           v-model="searchText"
-          placeholder="Buscar películas..."
+          placeholder="Buscar Teatres o actors..."
           mode="ios"
           color="light"
           class="searchbar-small"
-        />
+        ></ion-searchbar>
+
+        <!-- RESULTADOS DE ACTORES -->
+        <div
+          v-if="filteredActors.length"
+          class="mt-4 px-4 py-3 bg-white rounded-xl shadow-md border border-gray-100"
+        >
+          <h3 class="text-sm font-semibold mb-2 text-gray-700 uppercase tracking-wide">
+            Actores encontrados
+          </h3>
+          <div class="flex space-x-3 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
+            <div
+              v-for="(actor, index) in filteredActors"
+              :key="index"
+              class="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg shadow-sm border border-gray-200 min-w-[140px]"
+            >
+              <img
+                :src="actor.image"
+                :alt="actor.name"
+                class="rounded-full object-cover"
+                style="width: 36px; height: 36px;"
+              />
+              <span class="text-xs text-gray-800 font-medium truncate">{{ actor.name }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
         <ion-buttons slot="end">
-          <ion-button>
-            <ion-icon :icon="personOutline" />
+          <!-- Botón de registro utilizando el href -->
+          <ion-button href="/register">
+            <h2>Register</h2>
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
+
     <ion-content fullscreen class="ion-padding bg-gray-50 text-gray-900">
-      <h2 class="text-2xl font-bold mb-4">Descubre Películas</h2>
+      <h2 class="text-2xl font-bold mb-4">Descubreix Teatres</h2>
 
       <ion-grid>
         <template v-for="(chunk, rowIndex) in movieChunks" :key="rowIndex">
@@ -39,7 +71,7 @@
                 <img :src="movie.image" :alt="movie.title" class="movie-image" />
                 <ion-card-header>
                   <ion-card-title class="text-sm font-bold">
-                    {{ movie.title }}
+                    {{ movie.title }}  <!-- Aquí el título que viene de la base de datos -->
                   </ion-card-title>
                   <ion-card-subtitle class="text-xs text-gray-600">
                     {{ movie.year }} • ⭐ {{ movie.rating }}
@@ -123,23 +155,24 @@ import {
 
 import { filmOutline, personOutline } from 'ionicons/icons';
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router'; // Importamos useRouter para la navegación
 
 const searchText = ref('');
 
 const movies = ref([
   {
-    title: 'Star Wars 3',
-    year: '2005',
+    title: 'Romeo i Julieta',
+    year: '2024',
     rating: '7.6',
     image: 'https://preview.redd.it/keaxfxiu5ble1.jpeg?width=1080&crop=smart&auto=webp&s=aabf0c8e61e5d3219615f23a88e1e05739c1367e',
-    actors: ['Ewan McGregor', 'Hayden Christensen', 'Natalie Portman']
+    actors: ['Tom Holland', 'Hayden Christensen', 'Natalie Portman']
   },
   {
     title: 'Como entrenar a tu Dragon',
     year: '2025',
     rating: '4.3',
-    image: 'http://m.media-amazon.com/images/M/MV5BODA5Y2M0NjctNWQzMy00ODRhLWE0MzUtYmE1YTAzZjYyYmQyXkEyXkFqcGc@._V1_.jpg',
-    actors: ['Jay Baruchel', 'Gerard Butler', 'Craig Ferguson']
+    image: 'https://hips.hearstapps.com/hmg-prod/images/digital-hdg-crt-1sheet-crn-payoffonesheet-siz-947x1500-cta-release-date-cou-es-spanish-des-67b712c5c49f5.jpg?resize=980:*',
+    actors: ['Jay Baruchel', 'Nico Parker', 'Craig Ferguson']
   },
   {
     title: 'Creedme',
@@ -167,29 +200,43 @@ const movies = ref([
     year: '2025',
     rating: '7.9',
     image: 'https://m.media-amazon.com/images/M/MV5BODVhYTMwMzQtODA2Zi00MTEwLTgyYWItZmM0OTJiMjczNWVmXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg',
-    actors: ['Robert Downey Jr.', 'Gwyneth Paltrow']
+    actors: ['', 'Gwyneth Paltrow']
   }
 ]);
 
 // Imágenes de actores
 const actorData = ref([
-  { name: 'Ewan McGregor', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Ewan_McGregor_2012.jpg/1200px-Ewan_McGregor_2012.jpg' },
+  { name: 'Tom Holland', image: 'https://upload.wikimedia.org/wikipedia/commons/3/3c/Tom_Holland_by_Gage_Skidmore.jpg' },
   { name: 'Hayden Christensen', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Hayden-cfda2010-0004%281%29_%28cropped%29.jpg/800px-Hayden-cfda2010-0004%281%29_%28cropped%29.jpg' },
   { name: 'Natalie Portman', image: 'https://media.revistavanityfair.es/photos/6142d705676699d3bfcd1462/master/w_1600%2Cc_limit/255279.jpg' },
   { name: 'Jay Baruchel', image: 'https://www.lavanguardia.com/peliculas-series/images/profile/1982/4/w300/1GYJeQzPcY9Pfmc3FFsBwClkCv7.jpg' },
   { name: 'Gerard Butler', image: 'http://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Gerard_Butler_%2829681162176%29.jpg/640px-Gerard_Butler_%2829681162176%29.jpg' },
   { name: 'Nico Parker', image: 'https://upload.wikimedia.org/wikipedia/commons/4/4b/Nico_Parker%2C_MovieZine_interview_%28cropped%29.png' },
   { name: 'rayna vallandingham', image: 'https://m.media-amazon.com/images/M/MV5BNTA4ODc4NWQtM2FkYS00YjYwLTgxMjQtYWE4ODliY2MxMzNkXkEyXkFqcGc@._V1_.jpg' },
-  { name: 'Robert Downey Jr.', image: 'https://upload.wikimedia.org/wikipedia/commons/e/e3/Robert_Downey_Jr_2014_Comic_Con_%28cropped%29.jpg' },
-  { name: 'Gwyneth Paltrow', image: 'https://upload.wikimedia.org/wikipedia/commons/f/fd/GwynethPaltrowByAndreaRaffin2011.jpg' }
+  { name: 'Robert Downey Jr.', image: 'https://m.media-amazon.com/images/M/MV5BNzg1MTUyNDYxOF5BMl5BanBnXkFtZTgwNTQ4MTE2MjE@._V1_FMjpg_UX1000_.jpg' },
 ]);
 
 // Películas filtradas por búsqueda
-const filteredMovies = computed(() =>
-  movies.value.filter((movie) =>
-    movie.title.toLowerCase().includes(searchText.value.toLowerCase())
-  )
-);
+const filteredMovies = computed(() => {
+  const query = searchText.value.toLowerCase();
+  return movies.value.filter((movie) => {
+    const titleMatch = movie.title.toLowerCase().includes(query);
+    const actorMatch = movie.actors.some(actor =>
+      actor.toLowerCase().includes(query)
+    );
+    return titleMatch || actorMatch;
+  });
+});
+//FiltrarActores
+const filteredActors = computed(() => {
+  const query = searchText.value.toLowerCase();
+  if (!query) return [];
+
+  return actorData.value.filter(actor =>
+    actor.name.toLowerCase().includes(query)
+  );
+});
+
 
 // Agrupamos películas de a 3
 const movieChunks = computed(() => {
@@ -233,6 +280,10 @@ const goToNextPage = () => {
     currentPage.value++;
   }
 };
+const goToRegister = () => {
+  router.push('/register'); // Redirige a la página de registro
+};
+
 
 </script>
 
