@@ -21,11 +21,19 @@ const routes: Array<RouteRecordRaw> = [
       },
       {
         path: 'tab2',
-        component: () => import('@/views/Tab2Page.vue')
+        component: () => import('@/views/InfoPlay.vue')
       },
       {
         path: 'tab3',
-        component: () => import('@/views/Tab3Page.vue')
+        component: () => import('@/views/InfoUser.vue')
+      },
+      {
+        path: 'tab4',
+        component: () => import('@/views/InfoFavourites.vue')
+      },
+      {
+        path: 'tab5',
+        component: () => import('@/views/CreatePlay.vue')
       }
     ]
   }
