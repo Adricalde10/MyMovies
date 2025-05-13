@@ -21,7 +21,28 @@ const routes: Array<RouteRecordRaw> = [
       },
       {
         path: 'tab3',
-        component: () => import('@/views/Tab3Page.vue')
+        component: () => import('@/views/InfoUser.vue')
+      },
+      {
+        path: 'tab4',
+        component: () => import('@/views/InfoFavourites.vue')
+      },
+      {
+        path: 'tab5',
+        component: () => import('@/views/CreatePlay.vue')
+      },
+      {
+        path: 'Principal',
+        component: () => import('@/views/Principal.vue')
+      },
+      {
+        path: '/register',
+        name: 'Register',
+        component: () => import('@/views/Register.vue') // Verifica que esta ruta sea correcta
+      },
+      {
+        path: 'tab-movies',
+        component: () => import('@/views/MoviesPage.vue') // Verifica que esta ruta sea correcta
       }
     ]
   }
