@@ -1,11 +1,11 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
-import TabsPage from '../views/TabsPage.vue';
+import TabsPage from '../views/TabsPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/tabs/Principal'
+    redirect: '/Principal'
   },
   {
     path: '/tabs/',
@@ -13,27 +13,32 @@ const routes: Array<RouteRecordRaw> = [
     children: [
       {
         path: '',
-        redirect: '/tabs/tab1'
+        redirect: '/Principal'
       },
       {
-        path: 'tab2',
+        path: '/Principal',
+        name: 'Principal',
+        component: () => import('@/views/Principal.vue')
+      },
+      {
+        path: '/infoPlay',
+        name: 'infoPlay',
         component: () => import('@/views/InfoPlay.vue')
       },
       {
-        path: 'tab3',
+        path: '/infoUser',
+        name: 'infoUser',
         component: () => import('@/views/InfoUser.vue')
       },
       {
-        path: 'tab4',
+        path: '/infoFavourites',
+        name: 'infoFavourites',
         component: () => import('@/views/InfoFavourites.vue')
       },
       {
-        path: 'tab5',
+        path: '/createPlay',
+        name: 'createPlay',
         component: () => import('@/views/CreatePlay.vue')
-      },
-      {
-        path: 'Principal',
-        component: () => import('@/views/Principal.vue')
       },
       {
         path: '/register',
@@ -41,16 +46,22 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/Register.vue') // Verifica que esta ruta sea correcta
       },
       {
-        path: 'tab-movies',
+        path: '/login',
+        name: 'Login',
+        component: () => import('@/views/login.vue') // Verifica que esta ruta sea correcta
+      },
+      {
+        path: '/MoviesPage',
+        name: 'MoviesPage',
         component: () => import('@/views/MoviesPage.vue') // Verifica que esta ruta sea correcta
-      }
+      },
     ]
   }
-];
+]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes
-});
+})
 
-export default router;
+export default router
