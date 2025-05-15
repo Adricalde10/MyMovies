@@ -55,6 +55,26 @@ const routes: Array<RouteRecordRaw> = [
         name: 'MoviesPage',
         component: () => import('@/views/MoviesPage.vue') // Verifica que esta ruta sea correcta
       },
+      {
+        path: '/infoFavourites',
+        name: 'infoFavourites',
+        component: () => import('@/views/InfoFavourites.vue')
+      },
+      {
+        path: '/createPlay',
+        name: 'createPlay',
+        component: () => import('@/views/CreatePlay.vue')
+      },
+      {
+        path: '/manageContent',
+        name: 'manageContent',
+        component: () => import('@/views/ManageContent.vue')
+      },
+      {
+        path: '/editPlay',
+        name: 'editPlay',
+        component: () => import('@/views/EditPlay.vue')
+      }
     ]
   }
 ]
