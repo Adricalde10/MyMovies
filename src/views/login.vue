@@ -125,6 +125,7 @@ const handleSubmit = async () => {
         isAdmin: userData.is_admin ? 'true' : 'false' 
       } 
     });
+    
 
   } catch (err: any) {
     alert('Error al iniciar sesión: ' + err.message);
