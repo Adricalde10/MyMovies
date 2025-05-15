@@ -4,7 +4,10 @@
       <!-- Pantalla superposada amb fons difuminat -->
       <div class="overlay"></div>
 
-      <div class="info-user-container">
+      <div class="info-user-container position-relative">
+        <!-- Botó de tancar (X) -->
+        <button class="close-button" @click="closeInfoUser">✕</button>
+
         <!-- Foto de perfil -->
         <div class="profile-picture-container">
           <ion-icon :icon="personOutline" class="profile-picture"></ion-icon>
@@ -28,11 +31,12 @@
         </ion-item>
 
         <!-- Botó per veure continguts favorits -->
-        <ion-button expand="block" class="mt-4">Veure continguts favorits</ion-button>
+        <ion-button expand="block" class="mt-4" href="/infoFavourites">Veure continguts favorits</ion-button>
 
-        <!-- Botons per guardar canvis i eliminar compte -->
-        <ion-button expand="block" class="mt-4 bg-green-500 text-white hover:bg-green-600 transition duration-300" @click="saveChanges">Guardar canvis</ion-button>
+        <!-- Botons per guardar canvis, eliminar compte i logout -->
+        <ion-button expand="block" class="mt-4" @click="saveChanges">Guardar canvis</ion-button>
         <ion-button expand="block" color="danger" class="mt-2" @click="deleteAccount">Eliminar compte</ion-button>
+        <ion-button expand="block" color="medium" class="mt-2" @click="logout">Tancar sessió</ion-button>
       </div>
     </ion-content>
   </ion-page>
@@ -41,10 +45,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { personOutline } from 'ionicons/icons';
+import { useRouter } from 'vue-router';
 
 const userName = ref('');
 const userEmail = ref('');
 const newPassword = ref('');
+
+const router = useRouter();
 
 function changeProfilePicture() {
   alert("Funció per canviar la foto de perfil.");
@@ -56,6 +63,15 @@ function saveChanges() {
 
 function deleteAccount() {
   alert("Compte eliminat.");
+}
+
+function logout() {
+  alert("Sessió tancada.");
+  router.push('/login'); // Canvia a la ruta adequada del teu projecte
+}
+
+function closeInfoUser() {
+  router.push('/');
 }
 </script>
 
@@ -85,6 +101,21 @@ function deleteAccount() {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+.close-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 20px;
+  border: none;
+  background: transparent;
+  color: #555;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.close-button:hover {
+  color: #000;
+}
+
 .profile-picture-container {
   text-align: center;
 }
@@ -92,9 +123,5 @@ function deleteAccount() {
 .profile-picture {
   font-size: 100px;
   margin-bottom: 20px;
-}
-
-.ion-item {
-  margin-bottom: 16px;
 }
 </style>
