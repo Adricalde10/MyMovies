@@ -5,7 +5,7 @@
         <ion-buttons slot="start">
           <ion-back-button default-href="/"></ion-back-button>
         </ion-buttons>
-        <ion-title>Crear Nova Obra</ion-title>
+        <ion-title>Editar obra</ion-title>
       </ion-toolbar>
     </ion-header>
     <ion-content class="ion-padding bg-gray-100">
@@ -44,7 +44,7 @@
         </ion-item>
 
         <ion-button type="submit" expand="full" color="primary" class="rounded-lg">
-          Crear Obra
+          Guardar canvis
         </ion-button>
       </form>
     </ion-content>
@@ -114,7 +114,7 @@ const submitForm = () => {
   //   console.error('Error al crear l\'obra:', error);
   // });
 
-  router.push({ path: '/manageContent' }); 
+  router.push({ path: '/' }); // Redirigeix a la pàgina principal (temporalment)
 };
 </script>
 
