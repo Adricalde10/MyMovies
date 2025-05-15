@@ -27,8 +27,7 @@ import supabase from '@/supabaseClient';
 
 // Usuario desde query
 const route = useRoute();
-const userId = route.query.userId;
-alert(userId);
+const userId = route.query.userId as string | undefined;
 
 // Buscador
 const searchText = ref('');
@@ -38,6 +37,29 @@ const plays = ref<any[]>([]);
 const isLoading = ref(true);
 const errorMessage = ref('');
 
+// Estado admin
+const isAdmin = ref(false);
+
+// Carga datos usuario para saber si es admin
+const loadUserData = async () => {
+  if (!userId) return;
+  try {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('is_admin')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) throw error;
+
+    if (data) {
+      isAdmin.value = data.is_admin || false;
+    }
+  } catch (error) {
+    console.error('Error al cargar datos usuario:', error);
+  }
+};
+
 // Carga de datos desde Supabase
 const loadPlays = async () => {
   try {
@@ -45,8 +67,6 @@ const loadPlays = async () => {
       .from('play')
       .select('*')
       .order('id', { ascending: true });
-
-    console.log('Resultado de Supabase:', { data, error });
 
     if (error) throw error;
 
@@ -56,14 +76,16 @@ const loadPlays = async () => {
       plays.value = data;
     }
   } catch (error: any) {
-    console.error('Error al cargar las obras:', error.message);
     errorMessage.value = 'No se pudo cargar las obras.';
   } finally {
     isLoading.value = false;
   }
 };
 
-onMounted(loadPlays);
+onMounted(async () => {
+  await loadUserData();
+  await loadPlays();
+});
 
 // Búsqueda
 const filteredMovies = computed(() => {
@@ -78,14 +100,6 @@ const filteredMovies = computed(() => {
 });
 
 // Paginación
-const movieChunks = computed(() => {
-  const chunks = [];
-  for (let i = 0; i < currentMovies.value.length; i += 3) {
-    chunks.push(currentMovies.value.slice(i, i + 3));
-  }
-  return chunks;
-});
-
 const currentPage = ref(1);
 const moviesPerPage = 9; // 3x3 grid
 const totalPages = computed(() => Math.ceil(filteredMovies.value.length / moviesPerPage));
@@ -94,6 +108,14 @@ const currentMovies = computed(() => {
   const start = (currentPage.value - 1) * moviesPerPage;
   const end = start + moviesPerPage;
   return filteredMovies.value.slice(start, end);
+});
+
+const movieChunks = computed(() => {
+  const chunks = [];
+  for (let i = 0; i < currentMovies.value.length; i += 3) {
+    chunks.push(currentMovies.value.slice(i, i + 3));
+  }
+  return chunks;
 });
 
 const goToPreviousPage = () => {
@@ -120,7 +142,7 @@ const goToNextPage = () => {
             <ion-button href="/infoFavourites">
               <span class="text-white text-sm">Favorits</span>
             </ion-button>
-            <ion-button href="/manageContent">
+            <ion-button v-if="isAdmin" href="`/ManageContent?userId=${userId}`">
               <span class="text-white text-sm">Gestionar continguts</span>
             </ion-button>
           </template>
@@ -138,7 +160,7 @@ const goToNextPage = () => {
 
         <ion-buttons slot="end">
           <template v-if="userId">
-            <ion-button href="/infoUser">
+            <ion-button :href="`/infoUser?userId=${userId}`">
               <ion-icon :icon="personOutline" />
             </ion-button>
           </template>
