@@ -1,98 +1,143 @@
 <template>
   <ion-page>
-    <ion-header>
-      <ion-toolbar>
-        <ion-title>Registro</ion-title>
+    <ion-header translucent>
+      <ion-toolbar color="dark">
+        <ion-title class="text-success d-flex align-items-center gap-2">
+          <ion-icon :icon="filmOutline"></ion-icon>
+          <span>MyMovies</span>
+        </ion-title>
       </ion-toolbar>
     </ion-header>
 
-    <ion-content>
-      <ion-item>
-        <ion-label position="floating">Nombre de Usuario</ion-label>
-        <ion-input v-model="name" type="text" required></ion-input>
-      </ion-item>
+    <ion-content fullscreen class="ion-padding bg-light text-dark">
+      <div class="container mt-5">
+        <div class="card shadow p-4 mx-auto" style="max-width: 500px;">
+          <h2 class="text-center text-success mb-4">Registro</h2>
 
-      <ion-item>
-        <ion-label position="floating">Correo Electrónico</ion-label>
-        <ion-input v-model="email" type="email" required></ion-input>
-      </ion-item>
+          <!-- Nombre -->
+          <div class="mb-3">
+            <label class="form-label">Nombre de Usuario</label>
+            <input
+              v-model="formData.name"
+              type="text"
+              class="form-control"
+              placeholder="Tu nombre"
+              required
+            />
+            <div class="text-danger small" v-if="errors.name">{{ errors.name }}</div>
+          </div>
 
-      <ion-item>
-        <ion-label position="floating">Contraseña</ion-label>
-        <ion-input v-model="password" type="password" required></ion-input>
-      </ion-item>
+          <!-- Correo -->
+          <div class="mb-3">
+            <label class="form-label">Correo Electrónico</label>
+            <input
+              v-model="formData.email"
+              type="email"
+              class="form-control"
+              placeholder="ejemplo@correo.com"
+              required
+            />
+            <div class="text-danger small" v-if="errors.email">{{ errors.email }}</div>
+          </div>
 
-      <ion-item>
-        <ion-label position="floating">Confirmar Contraseña</ion-label>
-        <ion-input v-model="confirmPassword" type="password" required></ion-input>
-      </ion-item>
+          <!-- Contraseña -->
+          <div class="mb-3">
+            <label class="form-label">Contraseña</label>
+            <input
+              v-model="formData.password"
+              type="password"
+              class="form-control"
+              placeholder="********"
+              required
+            />
+            <div class="text-danger small" v-if="errors.password">{{ errors.password }}</div>
+          </div>
 
-      <ion-button expand="full" @click="register">Registrar</ion-button>
+          <!-- Confirmar Contraseña -->
+          <div class="mb-4">
+            <label class="form-label">Confirmar Contraseña</label>
+            <input
+              v-model="formData.confirmPassword"
+              type="password"
+              class="form-control"
+              placeholder="********"
+              required
+            />
+            <div class="text-danger small" v-if="errors.confirmPassword">{{ errors.confirmPassword }}</div>
+          </div>
+
+          <!-- Botón -->
+          <button class="btn btn-success w-100" @click="handleSubmit">
+            Registrarse
+          </button>
+        </div>
+      </div>
     </ion-content>
   </ion-page>
 </template>
-<script>
+<script setup lang="ts">
+import { ref } from 'vue';
 import supabase from '@/supabaseClient';
 
-export default {
-  data() {
-    return {
-      name: this.name,
-      email: this.email,
-      password: this.password,
-      confirmPassword: this.confirmPassword,
-    };
-  },
-  methods: {
-    async register() {
-      if (!this.name || !this.email || !this.password || !this.confirmPassword) {
-        alert('Por favor, completa todos los campos.');
-        return;
-      }
+const formData = ref({
+  name: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+});
 
-      if (this.password !== this.confirmPassword) {
-        alert('Las contraseñas no coinciden.');
-        return;
-      }
+const errors = ref({
+  name: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+});
 
-      try {
-        // Crear usuario en Supabase Auth
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: this.email,
-          password: this.password,
-        });
+const validateForm = () => {
+  errors.value = {
+    name: formData.value.name ? '' : 'El nombre es obligatorio.',
+    email: formData.value.email && /\S+@\S+\.\S+/.test(formData.value.email) ? '' : 'Correo electrónico no válido.',
+    password: formData.value.password ? '' : 'La contraseña es obligatoria.',
+    confirmPassword:
+      formData.value.confirmPassword === formData.value.password
+        ? ''
+        : 'Las contraseñas no coinciden.',
+  };
 
-        if (signUpError) throw signUpError;
+  return !Object.values(errors.value).some((e) => e !== '');
+};
 
-        // ⚠️ IMPORTANTE: accedemos a signUpData.user para evitar errores de shadowing
-        const user = signUpData.user;
+const handleSubmit = async () => {
+  if (!validateForm()) return;
 
-        if (!user) {
-          alert("Registro creado, pero se requiere verificar el correo antes de continuar.");
-          return;
-        }
+  try {
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: formData.value.email,
+      password: formData.value.password,
+    });
 
-        // Insertar datos adicionales en la tabla 'usuarios'
-        const { error: dbError } = await supabase
-          .from('usuarios')
-          .insert([
-            {
-              user_id: user.id,
-              name: this.name,
-              email: this.email,
-            },
-          ]);
+    if (signUpError) throw signUpError;
 
-        if (dbError) throw dbError;
+    const user = signUpData?.user;
 
-        alert('Registro exitoso');
-        this.$router.push('/login');
+    if (!user) {
+      alert('Registro creado, pero debes verificar tu correo.');
+      return;
+    }
 
-      } catch (err) {
-        console.error('Error en el registro:', err.message);
-        alert('Error al registrar: ' + err.message);
-      }
-    },
-  },
+    const { error: dbError } = await supabase.from('usuarios').insert([
+      {
+        user_id: user.id,
+        name: formData.value.name,
+        email: formData.value.email,
+      },
+    ]);
+
+    if (dbError) throw dbError;
+
+    alert('¡Registro exitoso!');
+  } catch (err: any) {
+    alert('Error al registrar: ' + err.message);
+  }
 };
 </script>
