@@ -22,12 +22,15 @@ import {
 
 import { filmOutline, personOutline } from 'ionicons/icons';
 import { ref, computed, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute,useRouter } from 'vue-router';
 import supabase from '@/supabaseClient';
 
 // Usuario desde query
 const route = useRoute();
 const userId = route.query.userId as string | undefined;
+
+const router = useRouter();
+
 
 // Buscador
 const searchText = ref('');
@@ -40,6 +43,12 @@ const errorMessage = ref('');
 // Estado admin
 const isAdmin = ref(false);
 
+const goToPlayInfo = (movie: any) => {
+  router.push({
+    path: '/infoPlay',
+    query: { id: movie.id }, // Passa l'ID de l'obra com a query parameter
+  });
+};
 // Carga datos usuario para saber si es admin
 const loadUserData = async () => {
   if (!userId) return;
@@ -197,17 +206,17 @@ const goToNextPage = () => {
                 :key="movieIndex"
                 size="4"
               >
-                <ion-card class="rounded-lg overflow-hidden shadow-md">
-                  <img :src="movie.page" :alt="movie.title" class="movie-image" />
-                  <ion-card-header>
-                    <ion-card-title class="text-sm font-bold">
-                      {{ movie.title }}
-                    </ion-card-title>
-                    <ion-card-subtitle class="text-xs text-gray-600">
-                      {{ movie.year }}
-                    </ion-card-subtitle>
-                  </ion-card-header>
-                </ion-card>
+                <ion-card class="rounded-lg overflow-hidden shadow-md" @click="goToPlayInfo(movie)">
+  <img :src="movie.page" :alt="movie.title" class="movie-image" />
+  <ion-card-header>
+    <ion-card-title class="text-sm font-bold">
+      {{ movie.title }}
+    </ion-card-title>
+    <ion-card-subtitle class="text-xs text-gray-600">
+      {{ movie.year }}
+    </ion-card-subtitle>
+  </ion-card-header>
+</ion-card>
               </ion-col>
             </ion-row>
           </template>
@@ -250,3 +259,4 @@ const goToNextPage = () => {
   margin-right: 1rem;
 }
 </style>
+
