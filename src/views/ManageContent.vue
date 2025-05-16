@@ -13,16 +13,21 @@ import {
   IonButtons
 } from '@ionic/vue';
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { trashOutline, createOutline, addOutline, personOutline } from 'ionicons/icons';
 import supabase from '@/supabaseClient'
+import { useRoute,useRouter } from 'vue-router';
 
 
 const router = useRouter();
-const plays = ref<{ id: number; title: string; year: string }[]>([]);
+const route = useRoute();
+
+// Usuario desde query
+const userId = route.query.userId as string | undefined;
+
+
 const isLoading = ref(true);
 const errorMessage = ref('');
-
+const plays = ref<{ id: number; title: string; year: string }[]>([]);
 // Carregar obres
 const loadPlays = async () => {
   isLoading.value = true;
@@ -77,7 +82,7 @@ onMounted(() => {
           <ion-button href="/Principal">
             <span class="text-white text-sm">Inici</span>
           </ion-button>
-          <ion-button href="/infoUser">
+          <ion-button :href="`/infoUser?userId=${userId}`">
             <ion-icon :icon="personOutline" color="light" />
           </ion-button>
         </ion-buttons>
