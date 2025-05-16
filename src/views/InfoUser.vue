@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { personOutline } from 'ionicons/icons';
 import { useRouter, useRoute } from 'vue-router';
 import supabase from '@/supabaseClient';
 
@@ -15,8 +14,12 @@ const newPassword = ref('');
 const profilePictureUrl = ref<string | null>(null);
 const loading = ref(true);
 const errorMessage = ref('');
+const fileInput = ref<HTMLInputElement | null>(null);
 
 const loadUserData = async () => {
+  loading.value = true;
+  errorMessage.value = '';
+
   try {
     const { data, error } = await supabase
       .from('usuarios')
@@ -29,7 +32,7 @@ const loadUserData = async () => {
     if (data) {
       userName.value = data.name || '';
       userEmail.value = data.email || '';
-      profilePictureUrl.value = data.profile_picture_url || null;
+      profilePictureUrl.value = data.photo || null;
     } else {
       errorMessage.value = 'No se encontró información del usuario.';
     }
@@ -47,16 +50,16 @@ const saveChanges = async () => {
   errorMessage.value = '';
 
   try {
+    // Opcional: actualizar email en Auth
     const { error: authError } = await supabase.auth.updateUser({
-      email: userEmail.value
+      email: userEmail.value,
     });
-
     if (authError) throw authError;
 
     const updates = {
       name: userName.value,
       email: userEmail.value,
-      profile_picture_url: profilePictureUrl.value,
+      photo: profilePictureUrl.value,
     };
 
     const { error: dbError } = await supabase
@@ -66,7 +69,7 @@ const saveChanges = async () => {
 
     if (dbError) throw dbError;
 
-    alert('Canvis guardats!');
+    alert('Cambios guardados!');
     newPassword.value = '';
   } catch (error: any) {
     errorMessage.value = 'Error al guardar: ' + error.message;
@@ -76,16 +79,63 @@ const saveChanges = async () => {
   }
 };
 
-function changeProfilePicture() {
-  alert("Funció per canviar la foto de perfil.");
+function triggerFileInput() {
+  fileInput.value?.click();
 }
 
+const handleFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+
+  loading.value = true;
+  errorMessage.value = '';
+
+  try {
+    const fileExt = file.name.split('.').pop();
+    const filePath = `butaca1/${userId}-${Date.now()}.${fileExt}`;
+
+    // 1. Subir archivo al bucket 'butaca1'
+    const { error: uploadError } = await supabase.storage
+      .from('butaca1')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    // 2. Obtener URL pública después de confirmar la subida
+    const { data } = supabase.storage
+      .from('butaca1')
+      .getPublicUrl(filePath);
+
+    const publicUrl = data.publicUrl;
+    if (!publicUrl) throw new Error('No se pudo obtener la URL pública');
+
+    // 3. Actualizar la columna 'photo' en la tabla 'usuarios'
+    const { error: dbError } = await supabase
+      .from('usuarios')
+      .update({ photo: publicUrl })
+      .eq('user_id', userId);
+
+    if (dbError) throw dbError;
+
+    // 4. Actualizar variable local para mostrar la nueva foto
+    profilePictureUrl.value = publicUrl;
+    alert('Foto de perfil actualizada!');
+  } catch (error: any) {
+    errorMessage.value = 'Error al actualizar la foto: ' + error.message;
+    alert(errorMessage.value);
+  } finally {
+    loading.value = false;
+    if (fileInput.value) fileInput.value.value = '';
+  }
+};
+
 function deleteAccount() {
-  alert("Compte eliminat.");
+  alert("Cuenta eliminada.");
 }
 
 function logout() {
-  alert("Sessió tancada.");
+  alert("Sesión cerrada.");
   router.push('/Principal');
 }
 
@@ -96,7 +146,7 @@ function closeInfoUser() {
 
 <template>
   <div class="container py-5 position-relative" style="max-width: 480px;">
-    <!-- Close Button -->
+    <!-- Botón cerrar -->
     <button
       type="button"
       class="btn-close position-absolute top-0 end-0 m-3"
@@ -115,44 +165,57 @@ function closeInfoUser() {
           />
         </template>
         <template v-else>
-          <ion-icon
-            :icon="personOutline"
-            style="font-size: 120px; color: #6c757d;"
-          ></ion-icon>
+          <img
+            src="https://via.placeholder.com/120?text=Usuari"
+            alt="Usuari"
+            class="rounded-circle img-thumbnail"
+            style="width: 120px; height: 120px; object-fit: cover;"
+          />
         </template>
+
+        <input
+          type="file"
+          accept="image/*"
+          ref="fileInput"
+          @change="handleFileChange"
+          style="display: none;"
+        />
+
         <button
           class="btn btn-outline-primary d-block mx-auto mt-3"
-          @click="changeProfilePicture"
+          @click="triggerFileInput"
           type="button"
         >
-          Canviar foto
+          Cambiar foto
         </button>
       </div>
 
       <div v-if="loading" class="d-flex justify-content-center my-4">
-        <ion-spinner name="crescent" />
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
       </div>
 
       <div v-else>
         <div class="mb-3">
-          <label for="username" class="form-label">Nom d'usuari</label>
+          <label for="username" class="form-label">Nombre de usuario</label>
           <input
             id="username"
             type="text"
             class="form-control"
             v-model="userName"
-            placeholder="Nom d'usuari"
+            placeholder="Nombre de usuario"
           />
         </div>
 
         <div class="mb-3">
-          <label for="email" class="form-label">Correu electrònic</label>
+          <label for="email" class="form-label">Correo electrónico</label>
           <input
             id="email"
             type="email"
             class="form-control"
             v-model="userEmail"
-            placeholder="Correu electrònic"
+            placeholder="Correo electrónico"
           />
         </div>
 
@@ -161,7 +224,7 @@ function closeInfoUser() {
           class="btn btn-primary w-100 mb-3"
           role="button"
         >
-          Veure continguts favorits
+          Ver contenidos favoritos
         </a>
 
         <button
@@ -170,7 +233,7 @@ function closeInfoUser() {
           :disabled="loading"
           type="button"
         >
-          Guardar canvis
+          Guardar cambios
         </button>
 
         <button
@@ -178,7 +241,7 @@ function closeInfoUser() {
           @click="deleteAccount"
           type="button"
         >
-          Eliminar compte
+          Eliminar cuenta
         </button>
 
         <button
@@ -186,7 +249,7 @@ function closeInfoUser() {
           @click="logout"
           type="button"
         >
-          Tancar sessió
+          Cerrar sesión
         </button>
 
         <p v-if="errorMessage" class="text-danger mt-3 text-center">
@@ -198,5 +261,5 @@ function closeInfoUser() {
 </template>
 
 <style scoped>
-/* Puedes eliminar estilos personalizados ya que Bootstrap maneja la mayoría */
+/* Bootstrap ya gestiona la mayoría de estilos */
 </style>
