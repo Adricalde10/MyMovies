@@ -56,10 +56,10 @@ const deletePlay = async (id: number) => {
 
 // Navegar
 const editPlay = (play: { id: number }) => {
-  router.push({ path: '/editPlay', query: { id: play.id.toString() } });
+  router.push({ path: `/editPlay?userId=${userId}`, query: { id: play.id.toString() } });
 };
 const goToCreatePlay = () => {
-  router.push('/createPlay');
+  router.push(`/CreatePlay?userId=${userId}`);
 };
 
 // Inicialització
@@ -79,7 +79,7 @@ onMounted(() => {
             <ion-icon :icon="addOutline" color="light" />
             <span class="ml-2 text-white">Nova Obra</span>
           </ion-button>
-          <ion-button href="/Principal">
+          <ion-button :href="`/Principal?userId=${userId}`">
             <span class="text-white text-sm">Inici</span>
           </ion-button>
           <ion-button :href="`/infoUser?userId=${userId}`">
