@@ -5,7 +5,7 @@
         <ion-buttons slot="start">
           <ion-back-button default-href="/"></ion-back-button>
         </ion-buttons>
-        <ion-title>Crear Nova Obra</ion-title>
+        <ion-title>Nova obra</ion-title>
       </ion-toolbar>
     </ion-header>
     <ion-content class="ion-padding bg-gray-100">
@@ -44,7 +44,7 @@
         </ion-item>
 
         <ion-button type="submit" expand="full" color="primary" class="rounded-lg">
-          Crear Obra
+          Guardar canvis
         </ion-button>
       </form>
     </ion-content>
@@ -53,23 +53,30 @@
 
 <script setup lang="ts">
 import { IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent, IonItem, IonLabel, IonInput, IonButton, IonTextarea } from '@ionic/vue';
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import supabase from '@/supabaseClient';
+
+const route = useRoute();
+const userId = route.query.userId as string | undefined;
 
 const router = useRouter();
 
+
 const formData = ref({
   title: '',
-  coverFile: null, // Per guardar l'objecte File de la imatge
+  coverFile: null as File | null, // Permite File o null
   creator: '',
   characters: '',
   year: null,
   description: '',
 });
 
+const isLoading = ref(false); // Para controlar el estado de carga del botón
+const errorMessage = ref<string | null>(null);
 const coverPreview = ref<string | null>(null);
 
-const handleFileChange = (event: Event) => {
+ const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files.length > 0) {
     formData.value.coverFile = target.files[0];
@@ -79,10 +86,70 @@ const handleFileChange = (event: Event) => {
     formData.value.coverFile = null;
     coverPreview.value = null;
   }
-};
+}; 
 
-const submitForm = () => {
+const submitForm = async () => {
   console.log('Dades del formulari:', formData.value);
+  if (isLoading.value) return; // Evita envíos múltiples
+  isLoading.value = true;
+  errorMessage.value = null;
+
+
+
+    try {
+    const { title, creator, characters, year, description, coverFile } = formData.value;
+
+    let coverUrl: string | null = null;
+    if (coverFile) {
+      // 1. Subir la imagen a Supabase Storage
+      const fileName = `cover-${Date.now()}-${coverFile.name}`;
+      const { data: storageData, error: storageError } = await supabase.storage
+        .from('butaca1') // Asegúrate de que tienes un bucket llamado 'covers'
+        .upload(fileName, coverFile, {
+          cacheControl: '3600', // Opcional: Control de caché
+          upsert: false,
+        });
+
+      if (storageError) {
+        console.error('Error al subir la portada:', storageError);
+        errorMessage.value = `Error al subir la portada: ${storageError.message}`;
+        isLoading.value = false;
+        return; // Importante: Detener el proceso si falla la subida
+      }
+      coverUrl = supabase.storage.from('butaca1').getPublicUrl(storageData.path).data.publicUrl;
+    }
+
+    // 2. Guardar los datos en la tabla 'play' de Supabase
+    const { data: dbData, error: dbError } = await supabase
+      .from('play')
+      .insert([
+        {
+          title,
+          creator,
+          characters: characters.split(',').map((c) => c.trim()),
+          year: year ? year : null,
+          description,
+          page: coverUrl, // Guarda la URL de la portada
+        },
+      ])
+      .select(); //Para que devuelva los datos insertados
+
+    if (dbError) {
+      console.error('Error al insertar en la base de datos:', dbError);
+      errorMessage.value = `Error al guardar la obra: ${dbError.message}`;
+      isLoading.value = false;
+      return;
+    }
+
+    console.log('Obra creada correctamente:', dbData);
+    
+  } catch (error: any) {
+    console.error('Error inesperado:', error);
+    errorMessage.value = `Error inesperado: ${error.message}`;
+  } finally {
+    isLoading.value = false; // Asegura que el estado de carga se restablezca
+  }
+
 
   // Aquí hauries d'implementar la lògica per guardar la nova obra,
   // incloent l'enviament del fitxer de la imatge si n'hi ha.
@@ -114,8 +181,17 @@ const submitForm = () => {
   //   console.error('Error al crear l\'obra:', error);
   // });
 
-  router.push({ path: '/manageContent' }); 
+   router.push({ 
+      path: '/ManageContent', 
+      query: { 
+        userId: userId, 
+      } 
+    });
 };
+
+
+
+
 </script>
 
 <style scoped>
