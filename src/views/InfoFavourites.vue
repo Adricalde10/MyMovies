@@ -27,28 +27,40 @@
     <ion-content class="ion-padding bg-gray-100">
       <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Obres Favorites</h2>
 
-      <ion-list v-if="favourites.length > 0">
+      <ion-list v-if="!isLoading && favouritesWithPage.length > 0">
         <ion-item
-          v-for="(play, index) in favourites"
-          :key="index"
+          v-for="fav in favouritesWithPage"
+          :key="fav.play.id"
           button
-          @click="goToPlay(play)"
-          class="mb-4 rounded-lg bg-white shadow-md hover:bg-gray-50 transition"
+          @click="goToPlay(fav.play)"
+          class="mb-4 bg-white rounded-lg shadow-sm"
         >
-          <ion-label class="flex flex-col">
-            <span class="text-lg font-semibold text-gray-900">{{ play.title }}</span>
-            <span class="text-sm text-gray-600">{{ play.year }}</span>
+          <ion-label class="flex items-center gap-2">
+            <img
+              v-if="fav.play.page"
+              :src="fav.play.page"
+              alt="Imatge de l'obra"
+              style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px;"
+            />
+            <div>
+              <span class="text-base font-medium text-gray-900">{{ fav.play.title }}</span><br />
+              <span class="text-xs text-gray-600">{{ fav.play.year }}</span>
+            </div>
           </ion-label>
           <ion-button
+            slot="end"
             fill="clear"
             color="danger"
-            @click.stop="removeFromFavourites(index)"
+            @click.stop="removeFromFavourites(fav.play.id)"
           >
             <ion-icon :icon="trashOutline" />
           </ion-button>
         </ion-item>
       </ion-list>
 
+      <div v-else-if="isLoading" class="text-center text-gray-600 mt-12">
+        Carregant obres favorites...
+      </div>
       <div v-else class="text-center text-gray-600 mt-12">
         Encara no has afegit cap obra a favorits.
       </div>
@@ -59,15 +71,15 @@
 <script setup lang="ts">
 import {
   IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
   IonContent,
   IonList,
   IonItem,
   IonLabel,
   IonButton,
   IonIcon,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
   IonButtons
 } from '@ionic/vue';
 import { ref, onMounted } from 'vue';
@@ -76,8 +88,10 @@ import { trashOutline, filmOutline, personOutline } from 'ionicons/icons';
 import { supabase } from '../supabaseClient'; // Ajusta la ruta según tu estructura
 
 interface Play {
+  id: number;
   title: string;
   year: string;
+  page?: string | null;
 }
 
 interface FavouritePlay {
@@ -85,52 +99,49 @@ interface FavouritePlay {
   play: Play;
 }
 
-const favouriteRelations = ref<FavouritePlay[]>([]);
-const favourites = ref<Play[]>([]);
-
+const router = useRouter();
 const route = useRoute();
+
 const userId = route.query.userId as string | undefined;
 
-const router = useRouter();
+const isLoading = ref(true);
+const errorMessage = ref('');
+const favouritesWithPage = ref<FavouritePlay[]>([]);
 
-async function loadFavourites() {
-  if (!userId) return;
-
+const loadFavourites = async () => {
+  isLoading.value = true;
   const { data, error } = await supabase
     .from<FavouritePlay>('Favorite_play')
-    .select('id_play, play(title, year)')
+    .select('id_play, play(id, title, year, page)')
     .eq('id_user', userId);
 
   if (error) {
-    console.error('Error loading favourites:', error);
-  } else if (data) {
-    favouriteRelations.value = data;
-    favourites.value = data.map(fav => fav.play);
+    errorMessage.value = 'No es poden carregar les obres favorites.';
+    console.error(error);
+  } else {
+    favouritesWithPage.value = data;
   }
-}
+  isLoading.value = false;
+};
 
-async function removeFromFavourites(index: number) {
-  if (!userId) return;
-
-  const favRelation = favouriteRelations.value[index];
-
+const removeFromFavourites = async (playId: number) => {
+  console.log('Eliminant favorit per a l\'usuari:', userId, 'i obra:', playId);
   const { error } = await supabase
     .from('Favorite_play')
     .delete()
     .eq('id_user', userId)
-    .eq('id_play', favRelation.id_play);
+    .eq('id_play', playId);
 
   if (error) {
-    console.error('Error deleting favourite:', error);
+    console.error('Error eliminant de favorits:', error.message);
   } else {
-    favouriteRelations.value.splice(index, 1);
-    favourites.value.splice(index, 1);
+    favouritesWithPage.value = favouritesWithPage.value.filter(fav => fav.play.id !== playId);
   }
-}
+};
 
-function goToPlay(play: Play) {
-  router.push({ path: '/infoPlay', query: { title: play.title } });
-}
+const goToPlay = (play: Play) => {
+  router.push({ path: '/infoPlay', query: { id: play.id.toString(), userId: userId } });
+};
 
 onMounted(() => {
   loadFavourites();
