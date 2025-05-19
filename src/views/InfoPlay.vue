@@ -8,21 +8,37 @@
         </ion-title>
 
         <ion-buttons slot="end" class="space-x-2">
-          <ion-button :href="`/Principal?userId=${userId}`">
+          <ion-button :href="`/Principal${userId ? '?userId=' + userId : ''}`">
             <span class="text-white text-sm">Inici</span>
           </ion-button>
-          <ion-button :href="`/InfoFavourites?userId=${userId}`">
+
+          <ion-button
+            v-if="userId"
+            :href="`/infoFavourites?userId=${userId}`">
             <span class="text-white text-sm">Favorits</span>
           </ion-button>
-          <ion-button :href="`/ManageContent?userId=${userId}`">
+
+          <ion-button
+            v-if="isAdmin"
+            :href="`/manageContent?userId=${userId}`">
             <span class="text-white text-sm">Gestionar continguts</span>
           </ion-button>
         </ion-buttons>
 
         <ion-buttons slot="end">
-          <ion-button :href="`/InfoUser?userId=${userId}`">
-            <ion-icon :icon="personOutline" class="text-white w-5 h-5" />
-          </ion-button>
+          <template v-if="userId">
+            <ion-button :href="`/infoUser?userId=${userId}`">
+              <ion-icon :icon="personOutline" class="text-white w-5 h-5" />
+            </ion-button>
+          </template>
+          <template v-else>
+            <ion-button href="/login">
+              <span class="text-white text-sm">Iniciar Sesión</span>
+            </ion-button>
+            <ion-button href="/Register">
+              <span class="text-white text-sm">Registro</span>
+            </ion-button>
+          </template>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -36,7 +52,7 @@
       </div>
       <div v-else-if="play">
         <ion-card class="rounded-lg overflow-hidden shadow-xl bg-white mb-6">
-          <img :src="play.page" :alt="play.title" class="movie-image rounded-t-lg"/>
+          <img :src="play.page" :alt="play.title" class="movie-image rounded-t-lg" />
           <ion-card-header class="p-4">
             <ion-card-title class="text-3xl font-bold text-gray-900">{{ play.title }}</ion-card-title>
             <ion-card-subtitle class="text-gray-500">{{ play.year }}</ion-card-subtitle>
@@ -56,8 +72,9 @@
             <ion-textarea
               v-model="newReviewText"
               placeholder="Què t'ha semblat l'obra?"
-              rows=5
+              rows="5"
               class="rounded-md bg-gray-200 text-gray-800"
+              :disabled="!userId"
             ></ion-textarea>
           </ion-item>
 
@@ -68,8 +85,9 @@
                 v-for="n in 10"
                 :key="n"
                 @click="newReviewRating = n"
-                :color="(newReviewRating >= n ? 'warning' : 'medium')"
+                :color="newReviewRating >= n ? 'warning' : 'medium'"
                 class="star-rating-btn"
+                :disabled="!userId"
               >
                 <ion-icon :icon="starOutline" />
               </ion-button>
@@ -77,9 +95,18 @@
             </div>
           </ion-item>
 
-          <ion-button expand="block" class="mt-4 bg-green-500 text-white hover:bg-green-600 transition duration-300" @click="submitReview">
+          <ion-button
+            expand="block"
+            class="mt-4 bg-green-500 text-white hover:bg-green-600 transition duration-300"
+            @click="submitReview"
+            :disabled="!userId"
+          >
             Enviar ressenya
           </ion-button>
+
+          <div v-if="!userId" class="mt-2 text-red-600 text-center">
+            Per enviar una ressenya, si us plau <a href="/login" class="underline">inicia sessió</a> o <a href="/Register" class="underline">registra't</a>.
+          </div>
         </ion-card>
 
         <ion-list>
@@ -97,6 +124,7 @@
                   color="danger"
                   @click="deleteReview(index)"
                   class="mt-2 text-sm font-semibold text-red-500"
+                  v-if="userId"
                 >
                   Eliminar
                 </ion-button>
@@ -135,17 +163,18 @@ import { useRoute } from 'vue-router';
 import supabase from '@/supabaseClient';
 import { filmOutline, personOutline, starOutline } from 'ionicons/icons';
 
-
 const route = useRoute();
-const userId = route.query.userId as string | undefined;
 const playId = ref(route.query.id as string | undefined);
+const userId = route.query.userId as string | undefined;
+
 const play = ref<any>(null);
 const isLoading = ref(true);
 const errorMessage = ref('');
+const isAdmin = ref(false);
 
 const newReviewText = ref('');
 const newReviewRating = ref<number | null>(null);
-const userName = ref('Usuari Exemple'); // Aquí hauries de tenir la lògica per obtenir el nom d'usuari real
+const userName = ref('Usuari Exemple');
 
 const loadPlay = async () => {
   if (!playId.value) {
@@ -163,6 +192,7 @@ const loadPlay = async () => {
     if (error) throw error;
 
     if (data) {
+      if (!data.reviews) data.reviews = [];
       play.value = data;
     } else {
       errorMessage.value = 'No s\'ha trobat l\'obra.';
@@ -174,24 +204,40 @@ const loadPlay = async () => {
   }
 };
 
-onMounted(loadPlay);
+const loadUserRole = async () => {
+  if (!userId) return;
+  const { data, error } = await supabase
+    .from('usuarios')
+    .select('is_admin')
+    .eq('user_id', userId)
+    .single();
+
+  if (error) {
+    console.error('Error al cargar el rol del usuario:', error.message);
+    return;
+  }
+
+  isAdmin.value = data?.is_admin || false;
+};
+
+onMounted(() => {
+  loadPlay();
+  loadUserRole();
+});
 
 function submitReview() {
+  if (!userId) {
+    alert('Cal iniciar sessió per enviar una ressenya.');
+    return;
+  }
   if (!newReviewText.value || newReviewRating.value === null) {
     alert('Omple tots els camps!');
     return;
   }
-
   if (newReviewRating.value < 0 || newReviewRating.value > 10) {
     alert('La valoració ha de ser entre 0 i 10.');
     return;
   }
-
-  // Aquí hauries d'enviar la ressenya a la teva base de dades
-  // amb l'ID de l'obra (playId.value), el text (newReviewText.value),
-  // la valoració (newReviewRating.value) i l'usuari (userName.value).
-  // Després de guardar-la, hauries de tornar a carregar les ressenyes de l'obra.
-
   if (play.value && play.value.reviews) {
     play.value.reviews.push({
       text: newReviewText.value,
@@ -199,14 +245,12 @@ function submitReview() {
       user: userName.value
     });
   }
-
   newReviewText.value = '';
   newReviewRating.value = null;
 }
 
 function deleteReview(index: number) {
-  // Aquí hauries d'implementar la lògica per eliminar la ressenya de la base de dades.
-  // Després d'eliminar-la, hauries de tornar a carregar les ressenyes de l'obra.
+  if (!userId) return;
   if (play.value && play.value.reviews) {
     play.value.reviews.splice(index, 1);
   }
@@ -214,43 +258,14 @@ function deleteReview(index: number) {
 </script>
 
 <style scoped>
-
-.character-item {
-  display: inline-block;
-  margin-right: 0.5em;
-}
-
 .movie-image {
   width: 100%;
-  height: 250px; /* Ajusta aquest valor segons vulguis */
+  height: 250px;
   object-fit: cover;
   border-radius: 0.5rem;
 }
-
 .star-rating-btn {
   margin-right: 4px;
   --ion-icon-size: 24px;
-}
-
-.ion-button {
-  font-weight: bold;
-  transition: all 0.3s;
-}
-
-.ion-button:hover {
-  transform: scale(1.05);
-}
-
-.ion-list {
-  padding: 0 16px;
-}
-
-.ion-card-title {
-  font-size: 1.25rem;
-}
-
-.ion-card-content p {
-  font-size: 1rem;
-  line-height: 1.5;
 }
 </style>
