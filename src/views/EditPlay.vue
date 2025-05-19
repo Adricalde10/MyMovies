@@ -156,7 +156,7 @@ const submitForm = async () => {
       const file = formData.value.coverFile;
       const filePath = `covers/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage
-        .from('your_bucket_name') // Reemplaza 'your_bucket_name' con el nombre de tu bucket de almacenamiento
+        .from('butaca1') // Reemplaza 'your_bucket_name' con el nombre de tu bucket de almacenamiento
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false,
@@ -167,7 +167,7 @@ const submitForm = async () => {
       }
 
       const { data: publicUrl } = supabase.storage
-        .from('your_bucket_name') // Reemplaza 'your_bucket_name' con el nombre de tu bucket de almacenamiento
+        .from('butaca1') // Reemplaza 'your_bucket_name' con el nombre de tu bucket de almacenamiento
         .getPublicUrl(filePath);
 
       updates.page = publicUrl.publicUrl;
