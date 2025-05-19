@@ -8,19 +8,19 @@
         </ion-title>
 
         <ion-buttons slot="end" class="space-x-2">
-          <ion-button href="/Principal">
+          <ion-button :href="`/Principal?userId=${userId}`">
             <span class="text-white text-sm">Inici</span>
           </ion-button>
-          <ion-button href="/infoFavourites">
+          <ion-button :href="`/InfoFavourites?userId=${userId}`">
             <span class="text-white text-sm">Favorits</span>
           </ion-button>
-          <ion-button href="/manageContent">
+          <ion-button :href="`/ManageContent?userId=${userId}`">
             <span class="text-white text-sm">Gestionar continguts</span>
           </ion-button>
         </ion-buttons>
 
         <ion-buttons slot="end">
-          <ion-button href="/infoUser">
+          <ion-button :href="`/InfoUser?userId=${userId}`">
             <ion-icon :icon="personOutline" class="text-white w-5 h-5" />
           </ion-button>
         </ion-buttons>
@@ -56,7 +56,7 @@
             <ion-textarea
               v-model="newReviewText"
               placeholder="Què t'ha semblat l'obra?"
-              rows="5"
+              rows=5
               class="rounded-md bg-gray-200 text-gray-800"
             ></ion-textarea>
           </ion-item>
@@ -68,7 +68,7 @@
                 v-for="n in 10"
                 :key="n"
                 @click="newReviewRating = n"
-                :color="newReviewRating >= n ? 'warning' : 'medium'"
+                :color="(newReviewRating >= n ? 'warning' : 'medium')"
                 class="star-rating-btn"
               >
                 <ion-icon :icon="starOutline" />
@@ -135,7 +135,9 @@ import { useRoute } from 'vue-router';
 import supabase from '@/supabaseClient';
 import { filmOutline, personOutline, starOutline } from 'ionicons/icons';
 
+
 const route = useRoute();
+const userId = route.query.userId as string | undefined;
 const playId = ref(route.query.id as string | undefined);
 const play = ref<any>(null);
 const isLoading = ref(true);
