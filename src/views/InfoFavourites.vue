@@ -8,16 +8,16 @@
         </ion-title>
 
         <ion-buttons slot="end" class="space-x-2">
-          <ion-button href="/Principal">
+          <ion-button :href="`/Principal?userId=${userId}`">
             <span class="text-white text-sm">Inici</span>
           </ion-button>
-          <ion-button href="/manageContent">
+          <ion-button :href="`/ManageContent?userId=${userId}`">
             <span class="text-white text-sm">Gestionar continguts</span>
           </ion-button>
         </ion-buttons>
 
         <ion-buttons slot="end">
-          <ion-button href="/infoUser">
+          <ion-button :href="`/InfoUser?userId=${userId}`">
             <ion-icon :icon="personOutline" class="text-white w-5 h-5" />
           </ion-button>
         </ion-buttons>
@@ -71,7 +71,7 @@ import {
   IonButtons
 } from '@ionic/vue';
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute,useRouter } from 'vue-router';
 import { trashOutline, filmOutline, personOutline } from 'ionicons/icons';
 
 const favourites = ref([
@@ -84,6 +84,9 @@ const favourites = ref([
     year: '1606',
   }
 ]);
+
+const route = useRoute();
+const userId = route.query.userId as string | undefined;
 
 const router = useRouter();
 
