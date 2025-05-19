@@ -1,265 +1,256 @@
+<template>
+  <ion-page>
+    <ion-header translucent>
+      <ion-toolbar color="dark">
+        <ion-title class="flex items-center space-x-2">
+          <ion-icon :icon="filmOutline" class="text-green-400 w-5 h-5"></ion-icon>
+          <span class="text-green-400">Butaca1</span>
+        </ion-title>
+
+        <ion-buttons slot="end" class="space-x-2">
+          <ion-button :href="`/Principal?userId=${userId}`">
+            <span class="text-white text-sm">Inici</span>
+          </ion-button>
+          <ion-button :href="`/InfoFavourites?userId=${userId}`">
+            <span class="text-white text-sm">Favorits</span>
+          </ion-button>
+          <ion-button :href="`/ManageContent?userId=${userId}`">
+            <span class="text-white text-sm">Gestionar continguts</span>
+          </ion-button>
+        </ion-buttons>
+
+        <ion-buttons slot="end">
+          <ion-button :href="`/InfoUser?userId=${userId}`">
+            <ion-icon :icon="personOutline" class="text-white w-5 h-5" />
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content fullscreen class="ion-padding bg-gray-100 text-gray-900">
+      <div v-if="isLoading" class="ion-text-center">
+        <ion-spinner name="crescent" />
+      </div>
+      <div v-else-if="errorMessage">
+        <p>{{ errorMessage }}</p>
+      </div>
+      <div v-else-if="play">
+        <ion-card class="rounded-lg overflow-hidden shadow-xl bg-white mb-6">
+          <img :src="play.page" :alt="play.title" class="movie-image rounded-t-lg"/>
+          <ion-card-header class="p-4">
+            <ion-card-title class="text-3xl font-bold text-gray-900">{{ play.title }}</ion-card-title>
+            <ion-card-subtitle class="text-gray-500">{{ play.year }}</ion-card-subtitle>
+          </ion-card-header>
+          <ion-card-content class="p-4">
+  <p class="text-gray-800">{{ play.description }}</p>
+  <p class="mt-4 text-gray-700"><strong>Creador:</strong> {{ play.creator }}</p>
+  <p class="mt-2 text-gray-700"><strong>Personatges:</strong> {{ play.characters }}</p>
+</ion-card-content>
+        </ion-card>
+
+        <ion-card class="p-6 mt-6 bg-white shadow-lg rounded-lg">
+          <h3 class="text-xl font-semibold text-gray-800 mb-4">Escriu una ressenya</h3>
+
+          <ion-item class="ion-margin-bottom">
+            <ion-label position="stacked">Comentari</ion-label>
+            <ion-textarea
+              v-model="newReviewText"
+              placeholder="Què t'ha semblat l'obra?"
+              rows=5
+              class="rounded-md bg-gray-200 text-gray-800"
+            ></ion-textarea>
+          </ion-item>
+
+          <ion-item class="ion-margin-bottom">
+            <ion-label position="stacked">Valoració</ion-label>
+            <div class="flex items-center">
+              <ion-button
+                v-for="n in 10"
+                :key="n"
+                @click="newReviewRating = n"
+                :color="(newReviewRating >= n ? 'warning' : 'medium')"
+                class="star-rating-btn"
+              >
+                <ion-icon :icon="starOutline" />
+              </ion-button>
+              <span class="ml-2 text-gray-700 font-semibold">{{ newReviewRating }}/10</span>
+            </div>
+          </ion-item>
+
+          <ion-button expand="block" class="mt-4 bg-green-500 text-white hover:bg-green-600 transition duration-300" @click="submitReview">
+            Enviar ressenya
+          </ion-button>
+        </ion-card>
+
+        <ion-list>
+          <ion-item v-for="(review, index) in play.reviews" :key="index">
+            <ion-card class="p-4 w-full shadow-md mb-6 bg-white rounded-lg">
+              <ion-card-header class="mb-2">
+                <ion-card-title class="text-lg font-semibold text-gray-900">
+                  {{ review.user }} - ⭐ {{ review.rating }}/10
+                </ion-card-title>
+              </ion-card-header>
+              <ion-card-content class="text-gray-700">
+                <p>{{ review.text }}</p>
+                <ion-button
+                  fill="clear"
+                  color="danger"
+                  @click="deleteReview(index)"
+                  class="mt-2 text-sm font-semibold text-red-500"
+                >
+                  Eliminar
+                </ion-button>
+              </ion-card-content>
+            </ion-card>
+          </ion-item>
+        </ion-list>
+      </div>
+    </ion-content>
+  </ion-page>
+</template>
+
 <script setup lang="ts">
+import {
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardSubtitle,
+  IonCardContent,
+  IonButton,
+  IonButtons,
+  IonTextarea,
+  IonLabel,
+  IonItem,
+  IonList,
+  IonIcon,
+  IonSpinner
+} from '@ionic/vue';
 import { ref, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRoute } from 'vue-router';
 import supabase from '@/supabaseClient';
+import { filmOutline, personOutline, starOutline } from 'ionicons/icons';
+
 
 const route = useRoute();
-const router = useRouter();
-
-const userId = route.query.userId as string;
-
-const userName = ref('');
-const userEmail = ref('');
-const newPassword = ref('');
-const profilePictureUrl = ref<string | null>(null);
-const loading = ref(true);
+const userId = route.query.userId as string | undefined;
+const playId = ref(route.query.id as string | undefined);
+const play = ref<any>(null);
+const isLoading = ref(true);
 const errorMessage = ref('');
-const fileInput = ref<HTMLInputElement | null>(null);
 
-const loadUserData = async () => {
-  loading.value = true;
-  errorMessage.value = '';
+const newReviewText = ref('');
+const newReviewRating = ref<number | null>(null);
+const userName = ref('Usuari Exemple'); // Aquí hauries de tenir la lògica per obtenir el nom d'usuari real
 
+const loadPlay = async () => {
+  if (!playId.value) {
+    errorMessage.value = 'No s\'ha proporcionat l\'ID de l\'obra.';
+    isLoading.value = false;
+    return;
+  }
   try {
     const { data, error } = await supabase
-      .from('usuarios')
+      .from('play')
       .select('*')
-      .eq('user_id', userId)
+      .eq('id', playId.value)
       .single();
 
     if (error) throw error;
 
     if (data) {
-      userName.value = data.name || '';
-      userEmail.value = data.email || '';
-      profilePictureUrl.value = data.photo || null;
+      play.value = data;
     } else {
-      errorMessage.value = 'No se encontró información del usuario.';
+      errorMessage.value = 'No s\'ha trobat l\'obra.';
     }
   } catch (error: any) {
-    errorMessage.value = 'Error al cargar datos del usuario: ' + error.message;
+    errorMessage.value = 'No s\'ha pogut carregar la informació de l\'obra.';
   } finally {
-    loading.value = false;
+    isLoading.value = false;
   }
 };
 
-onMounted(loadUserData);
+onMounted(loadPlay);
 
-const saveChanges = async () => {
-  loading.value = true;
-  errorMessage.value = '';
+function submitReview() {
+  if (!newReviewText.value || newReviewRating.value === null) {
+    alert('Omple tots els camps!');
+    return;
+  }
 
-  try {
-    // Opcional: actualizar email en Auth
-    const { error: authError } = await supabase.auth.updateUser({
-      email: userEmail.value,
+  if (newReviewRating.value < 0 || newReviewRating.value > 10) {
+    alert('La valoració ha de ser entre 0 i 10.');
+    return;
+  }
+
+  // Aquí hauries d'enviar la ressenya a la teva base de dades
+  // amb l'ID de l'obra (playId.value), el text (newReviewText.value),
+  // la valoració (newReviewRating.value) i l'usuari (userName.value).
+  // Després de guardar-la, hauries de tornar a carregar les ressenyes de l'obra.
+
+  if (play.value && play.value.reviews) {
+    play.value.reviews.push({
+      text: newReviewText.value,
+      rating: newReviewRating.value,
+      user: userName.value
     });
-    if (authError) throw authError;
-
-    const updates = {
-      name: userName.value,
-      email: userEmail.value,
-      photo: profilePictureUrl.value,
-    };
-
-    const { error: dbError } = await supabase
-      .from('usuarios')
-      .update(updates)
-      .eq('user_id', userId);
-
-    if (dbError) throw dbError;
-
-    alert('Cambios guardados!');
-    newPassword.value = '';
-  } catch (error: any) {
-    errorMessage.value = 'Error al guardar: ' + error.message;
-    alert(errorMessage.value);
-  } finally {
-    loading.value = false;
   }
-};
 
-function triggerFileInput() {
-  fileInput.value?.click();
+  newReviewText.value = '';
+  newReviewRating.value = null;
 }
 
-const handleFileChange = async (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (!file) return;
-
-  loading.value = true;
-  errorMessage.value = '';
-
-  try {
-    const fileExt = file.name.split('.').pop();
-    const filePath = `butaca1/${userId}-${Date.now()}.${fileExt}`;
-
-    // 1. Subir archivo al bucket 'butaca1'
-    const { error: uploadError } = await supabase.storage
-      .from('butaca1')
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) throw uploadError;
-
-    // 2. Obtener URL pública después de confirmar la subida
-    const { data } = supabase.storage
-      .from('butaca1')
-      .getPublicUrl(filePath);
-
-    const publicUrl = data.publicUrl;
-    if (!publicUrl) throw new Error('No se pudo obtener la URL pública');
-
-    // 3. Actualizar la columna 'photo' en la tabla 'usuarios'
-    const { error: dbError } = await supabase
-      .from('usuarios')
-      .update({ photo: publicUrl })
-      .eq('user_id', userId);
-
-    if (dbError) throw dbError;
-
-    // 4. Actualizar variable local para mostrar la nueva foto
-    profilePictureUrl.value = publicUrl;
-    alert('Foto de perfil actualizada!');
-  } catch (error: any) {
-    errorMessage.value = 'Error al actualizar la foto: ' + error.message;
-    alert(errorMessage.value);
-  } finally {
-    loading.value = false;
-    if (fileInput.value) fileInput.value.value = '';
+function deleteReview(index: number) {
+  // Aquí hauries d'implementar la lògica per eliminar la ressenya de la base de dades.
+  // Després d'eliminar-la, hauries de tornar a carregar les ressenyes de l'obra.
+  if (play.value && play.value.reviews) {
+    play.value.reviews.splice(index, 1);
   }
-};
-
-function deleteAccount() {
-  alert("Cuenta eliminada.");
-}
-
-function logout() {
-  alert("Sesión cerrada.");
-  router.push('/Principal');
-}
-
-function closeInfoUser() {
-  router.push(`/Principal?userId=${userId}`);
 }
 </script>
 
-<template>
-  <div class="container py-5 position-relative" style="max-width: 480px;">
-    <!-- Botón cerrar -->
-    <button
-      type="button"
-      class="btn-close position-absolute top-0 end-0 m-3"
-      aria-label="Close"
-      @click="closeInfoUser"
-    ></button>
-
-    <div class="card shadow-sm p-4">
-      <div class="text-center mb-4">
-        <template v-if="profilePictureUrl">
-          <img
-            :src="profilePictureUrl"
-            alt="Foto perfil"
-            class="rounded-circle img-thumbnail"
-            style="width: 120px; height: 120px; object-fit: cover;"
-          />
-        </template>
-        <template v-else>
-          <img
-            src="https://via.placeholder.com/120?text=Usuari"
-            alt="Usuari"
-            class="rounded-circle img-thumbnail"
-            style="width: 120px; height: 120px; object-fit: cover;"
-          />
-        </template>
-
-        <input
-          type="file"
-          accept="image/*"
-          ref="fileInput"
-          @change="handleFileChange"
-          style="display: none;"
-        />
-
-        <button
-          class="btn btn-outline-primary d-block mx-auto mt-3"
-          @click="triggerFileInput"
-          type="button"
-        >
-          Cambiar foto
-        </button>
-      </div>
-
-      <div v-if="loading" class="d-flex justify-content-center my-4">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Cargando...</span>
-        </div>
-      </div>
-
-      <div v-else>
-        <div class="mb-3">
-          <label for="username" class="form-label">Nombre de usuario</label>
-          <input
-            id="username"
-            type="text"
-            class="form-control"
-            v-model="userName"
-            placeholder="Nombre de usuario"
-          />
-        </div>
-
-        <div class="mb-3">
-          <label for="email" class="form-label">Correo electrónico</label>
-          <input
-            id="email"
-            type="email"
-            class="form-control"
-            v-model="userEmail"
-            placeholder="Correo electrónico"
-          />
-        </div>
-
-        <a
-          :href="`/infoFavourites?userId=${userId}`"
-          class="btn btn-primary w-100 mb-3"
-          role="button"
-        >
-          Ver contenidos favoritos
-        </a>
-
-        <button
-          class="btn btn-success w-100 mb-3"
-          @click="saveChanges"
-          :disabled="loading"
-          type="button"
-        >
-          Guardar cambios
-        </button>
-
-        <button
-          class="btn btn-danger w-100 mb-3"
-          @click="deleteAccount"
-          type="button"
-        >
-          Eliminar cuenta
-        </button>
-
-        <button
-          class="btn btn-secondary w-100"
-          @click="logout"
-          type="button"
-        >
-          Cerrar sesión
-        </button>
-
-        <p v-if="errorMessage" class="text-danger mt-3 text-center">
-          {{ errorMessage }}
-        </p>
-      </div>
-    </div>
-  </div>
-</template>
-
 <style scoped>
-/* Bootstrap ya gestiona la mayoría de estilos */
+
+.character-item {
+  display: inline-block;
+  margin-right: 0.5em;
+}
+
+.movie-image {
+  width: 100%;
+  height: 250px; /* Ajusta aquest valor segons vulguis */
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+
+.star-rating-btn {
+  margin-right: 4px;
+  --ion-icon-size: 24px;
+}
+
+.ion-button {
+  font-weight: bold;
+  transition: all 0.3s;
+}
+
+.ion-button:hover {
+  transform: scale(1.05);
+}
+
+.ion-list {
+  padding: 0 16px;
+}
+
+.ion-card-title {
+  font-size: 1.25rem;
+}
+
+.ion-card-content p {
+  font-size: 1rem;
+  line-height: 1.5;
+}
 </style>
