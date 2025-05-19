@@ -31,6 +31,7 @@ const userId = route.query.userId as string | undefined;
 
 const router = useRouter();
 
+//const { dataCurrentUSer: { user } } = await supabase.auth.getUser();
 
 // Buscador
 const searchText = ref('');
@@ -46,7 +47,7 @@ const isAdmin = ref(false);
 const goToPlayInfo = (movie: any) => {
   router.push({
     path: '/infoPlay',
-    query: { id: movie.id }, // Passa l'ID de l'obra com a query parameter
+    query: { id: movie.id , userId: userId, }, // Passa l'ID de l'obra com a query parameter
   });
 };
 // Carga datos usuario para saber si es admin
@@ -148,10 +149,10 @@ const goToNextPage = () => {
 
         <ion-buttons slot="end" class="space-x-2">
           <template v-if="userId">
-            <ion-button href="/infoFavourites">
+            <ion-button :href="`/InfoFavourites?userId=${userId}`">
               <span class="text-white text-sm">Favorits</span>
             </ion-button>
-            <ion-button v-if="isAdmin" href="`/ManageContent?userId=${userId}`">
+            <ion-button v-if="isAdmin" :href="`/ManageContent?userId=${userId}`">
               <span class="text-white text-sm">Gestionar continguts</span>
             </ion-button>
           </template>
@@ -175,7 +176,7 @@ const goToNextPage = () => {
           </template>
           <template v-else>
             <ion-button href="/login">
-              <span class="text-white text-sm">Iniciar Sesión</span>
+              <span class="text-white text-sm">Iniciar Sesión </span>
             </ion-button>
             <ion-button href="/Register">
               <span class="text-white text-sm">Registro</span>
