@@ -55,8 +55,8 @@ const deletePlay = async (id: number) => {
 };
 
 // Navegar
-const editPlay = (play: { id: number }) => {
-  router.push({ path: `/editPlay?userId=${userId}`, query: { id: play.id.toString() } });
+const editPlay = (idPlay: number) => {
+  router.push({ path: `/EditPlay?userId=${userId}`, query: { id: idPlay.toString() } });
 };
 const goToCreatePlay = () => {
   router.push(`/CreatePlay?userId=${userId}`);
@@ -75,7 +75,7 @@ onMounted(() => {
         <ion-title>Gestionar Obres</ion-title>
 
         <ion-buttons slot="end">
-          <ion-button @click="goToCreatePlay">
+          <ion-button @click="goToCreatePlay()">
             <ion-icon :icon="addOutline" color="light" />
             <span class="ml-2 text-white">Nova Obra</span>
           </ion-button>
@@ -100,7 +100,7 @@ onMounted(() => {
         >
           <ion-label class="flex items-center gap-2">
             <img
-              v-if="play.page"
+            v-if="play.page"
               :src="play.page"
               alt="Imatge de l'obra"
               style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px;"
@@ -115,7 +115,7 @@ onMounted(() => {
 
 
           <ion-buttons slot="end">
-            <ion-button color="primary" @click="editPlay(play)">
+            <ion-button color="primary" @click="editPlay(play.id)">
               <ion-icon :icon="createOutline" />
             </ion-button>
             <ion-button color="danger" @click="deletePlay(play.id)">
