@@ -41,31 +41,6 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/CreatePlay.vue')
       },
       {
-        path: '/register',
-        name: 'Register',
-        component: () => import('@/views/Register.vue') // Verifica que esta ruta sea correcta
-      },
-      {
-        path: '/login',
-        name: 'Login',
-        component: () => import('@/views/login.vue') // Verifica que esta ruta sea correcta
-      },
-      {
-        path: '/MoviesPage',
-        name: 'MoviesPage',
-        component: () => import('@/views/MoviesPage.vue') // Verifica que esta ruta sea correcta
-      },
-      {
-        path: '/infoFavourites',
-        name: 'infoFavourites',
-        component: () => import('@/views/InfoFavourites.vue')
-      },
-      {
-        path: '/createPlay',
-        name: 'createPlay',
-        component: () => import('@/views/CreatePlay.vue')
-      },
-      {
         path: '/manageContent',
         name: 'manageContent',
         component: () => import('@/views/ManageContent.vue')
@@ -74,6 +49,16 @@ const routes: Array<RouteRecordRaw> = [
         path: '/editPlay',
         name: 'editPlay',
         component: () => import('@/views/EditPlay.vue')
+      },
+      {
+        path: '/register',
+        name: 'Register',
+        component: () => import('@/views/Register.vue') // Verifica que esta ruta sea correcta
+      },
+      {
+        path: '/login',
+        name: 'Login',
+        component: () => import('@/views/login.vue') // Verifica que esta ruta sea correcta
       }
     ]
   }
@@ -85,3 +70,4 @@ const router = createRouter({
 })
 
 export default router
+
