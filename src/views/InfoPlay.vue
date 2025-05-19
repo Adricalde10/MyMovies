@@ -44,7 +44,12 @@
           <ion-card-content class="p-4">
   <p class="text-gray-800">{{ play.description }}</p>
   <p class="mt-4 text-gray-700"><strong>Creador:</strong> {{ play.creator }}</p>
-  <p class="mt-2 text-gray-700"><strong>Personatges:</strong> {{ play.characters }}</p>
+  <p class="mt-2 text-gray-700">
+    <strong>Personatges:</strong>
+    <span v-if="play.characters">
+      {{ extractCharacterName(play.characters) }}
+    </span>
+  </p>
 </ion-card-content>
         </ion-card>
 
@@ -209,6 +214,23 @@ function deleteReview(index: number) {
   // Després d'eliminar-la, hauries de tornar a carregar les ressenyes de l'obra.
   if (play.value && play.value.reviews) {
     play.value.reviews.splice(index, 1);
+  }
+}
+
+// Nova funció per extreure el nom del personatge de la string
+function extractCharacterName(charactersString: string): string {
+  try {
+    // Intenta parsejar la string com a JSON per obtenir l'array
+    const charactersArray = JSON.parse(charactersString);
+    // Si és un array i té almenys un element, retorna el primer element
+    if (Array.isArray(charactersArray) && charactersArray.length > 0) {
+      return charactersArray[0];
+    }
+    // Si no es pot parsejar com a JSON o està buit, retorna la string original
+    return charactersString;
+  } catch (error) {
+    // Si hi ha un error al parsejar el JSON, probablement no és un array, retorna la string original
+    return charactersString;
   }
 }
 </script>
