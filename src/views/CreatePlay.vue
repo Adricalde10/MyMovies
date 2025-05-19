@@ -86,7 +86,7 @@ const coverPreview = ref<string | null>(null);
     formData.value.coverFile = null;
     coverPreview.value = null;
   }
-}; 
+};
 
 const submitForm = async () => {
   console.log('Dades del formulari:', formData.value);
@@ -94,9 +94,7 @@ const submitForm = async () => {
   isLoading.value = true;
   errorMessage.value = null;
 
-
-
-    try {
+  try {
     const { title, creator, characters, year, description, coverFile } = formData.value;
 
     let coverUrl: string | null = null;
@@ -126,7 +124,7 @@ const submitForm = async () => {
         {
           title,
           creator,
-          characters: characters.split(',').map((c) => c.trim()),
+          characters: characters, // Guarda la string tal cual
           year: year ? year : null,
           description,
           page: coverUrl, // Guarda la URL de la portada
@@ -142,7 +140,7 @@ const submitForm = async () => {
     }
 
     console.log('Obra creada correctamente:', dbData);
-    
+
   } catch (error: any) {
     console.error('Error inesperado:', error);
     errorMessage.value = `Error inesperado: ${error.message}`;
@@ -150,48 +148,13 @@ const submitForm = async () => {
     isLoading.value = false; // Asegura que el estado de carga se restablezca
   }
 
-
-  // Aquí hauries d'implementar la lògica per guardar la nova obra,
-  // incloent l'enviament del fitxer de la imatge si n'hi ha.
-  // Això normalment implica utilitzar FormData per enviar fitxers
-  // en una petició HTTP.
-
-  // Exemple d'ús de FormData per enviar el fitxer (a adaptar a la teva API):
-  // const uploadData = new FormData();
-  // uploadData.append('title', formData.value.title);
-  // if (formData.value.coverFile) {
-  //   uploadData.append('cover', formData.value.coverFile);
-  // }
-  // uploadData.append('creator', formData.value.creator);
-  // uploadData.append('characters', formData.value.characters);
-  // uploadData.append('year', formData.value.year ? formData.value.year.toString() : '');
-  // uploadData.append('description', formData.value.description);
-  //
-  // // Fes la petició HTTP amb uploadData
-  // fetch('/api/obres', {
-  //   method: 'POST',
-  //   body: uploadData,
-  // })
-  // .then(response => response.json())
-  // .then(data => {
-  //   console.log('Obra creada:', data);
-  //   router.push({ path: '/' });
-  // })
-  // .catch(error => {
-  //   console.error('Error al crear l\'obra:', error);
-  // });
-
-   router.push({ 
-      path: '/ManageContent', 
-      query: { 
-        userId: userId, 
-      } 
-    });
+  router.push({
+    path: '/ManageContent',
+    query: {
+      userId: userId,
+    }
+  });
 };
-
-
-
-
 </script>
 
 <style scoped>
