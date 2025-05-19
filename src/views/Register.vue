@@ -77,7 +77,9 @@
 </template>
 <script setup lang="ts">
 import { ref } from 'vue';
+import { IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent, IonItem, IonLabel, IonInput, IonButton, IonTextarea } from '@ionic/vue';
 import supabase from '@/supabaseClient';
+import { filmOutline, personOutline, starOutline } from 'ionicons/icons';
 
 const formData = ref({
   name: '',
