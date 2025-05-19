@@ -70,33 +70,71 @@ import {
   IonTitle,
   IonButtons
 } from '@ionic/vue';
-import { ref } from 'vue';
-import { useRoute,useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { trashOutline, filmOutline, personOutline } from 'ionicons/icons';
+import { supabase } from '../supabaseClient'; // Ajusta la ruta según tu estructura
 
-const favourites = ref([
-  {
-    title: 'Hamlet',
-    year: '1603',
-  },
-  {
-    title: 'Macbeth',
-    year: '1606',
-  }
-]);
+interface Play {
+  title: string;
+  year: string;
+}
+
+interface FavouritePlay {
+  id_play: number;
+  play: Play;
+}
+
+const favouriteRelations = ref<FavouritePlay[]>([]);
+const favourites = ref<Play[]>([]);
 
 const route = useRoute();
 const userId = route.query.userId as string | undefined;
 
 const router = useRouter();
 
-function removeFromFavourites(index: number) {
-  favourites.value.splice(index, 1);
+async function loadFavourites() {
+  if (!userId) return;
+
+  const { data, error } = await supabase
+    .from<FavouritePlay>('Favorite_play')
+    .select('id_play, play(title, year)')
+    .eq('id_user', userId);
+
+  if (error) {
+    console.error('Error loading favourites:', error);
+  } else if (data) {
+    favouriteRelations.value = data;
+    favourites.value = data.map(fav => fav.play);
+  }
 }
 
-function goToPlay(play: { title: string }) {
+async function removeFromFavourites(index: number) {
+  if (!userId) return;
+
+  const favRelation = favouriteRelations.value[index];
+
+  const { error } = await supabase
+    .from('Favorite_play')
+    .delete()
+    .eq('id_user', userId)
+    .eq('id_play', favRelation.id_play);
+
+  if (error) {
+    console.error('Error deleting favourite:', error);
+  } else {
+    favouriteRelations.value.splice(index, 1);
+    favourites.value.splice(index, 1);
+  }
+}
+
+function goToPlay(play: Play) {
   router.push({ path: '/infoPlay', query: { title: play.title } });
 }
+
+onMounted(() => {
+  loadFavourites();
+});
 </script>
 
 <style scoped>
