@@ -11,9 +11,11 @@
           <ion-button :href="`/Principal?userId=${userId}`">
             <span class="text-white text-sm">Inici</span>
           </ion-button>
-          <ion-button :href="`/ManageContent?userId=${userId}`">
-            <span class="text-white text-sm">Gestionar continguts</span>
-          </ion-button>
+          <ion-buttons v-if="isAdmin" slot="end" class="space-x-2">
+            <ion-button :href="`/ManageContent?userId=${userId}`">
+              <span class="text-white text-sm">Gestionar continguts</span>
+            </ion-button>
+          </ion-buttons>
         </ion-buttons>
 
         <ion-buttons slot="end">
@@ -30,7 +32,7 @@
       <ion-list v-if="!isLoading && favouritesWithPage.length > 0">
         <ion-item
           v-for="fav in favouritesWithPage"
-          :key="fav.play.id"
+          :key="fav.id_play"
           button
           @click="goToPlay(fav.play)"
           class="mb-4 bg-white rounded-lg shadow-sm"
@@ -51,7 +53,7 @@
             slot="end"
             fill="clear"
             color="danger"
-            @click.stop="removeFromFavourites(fav.play.id)"
+            @click.stop="deleteFavourite(fav.id_play)"
           >
             <ion-icon :icon="trashOutline" />
           </ion-button>
@@ -85,7 +87,7 @@ import {
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { trashOutline, filmOutline, personOutline } from 'ionicons/icons';
-import { supabase } from '../supabaseClient'; // Ajusta la ruta según tu estructura
+import { supabase } from '../supabaseClient';
 
 interface Play {
   id: number;
@@ -99,33 +101,61 @@ interface FavouritePlay {
   play: Play;
 }
 
-const router = useRouter();
 const route = useRoute();
-
-const userId = route.query.userId as string | undefined;
+const router = useRouter();
+const userId = route.query.userId as string;
 
 const isLoading = ref(true);
-const errorMessage = ref('');
 const favouritesWithPage = ref<FavouritePlay[]>([]);
+const isAdmin = ref(false);
+
+const loadUserData = async () => {
+  if (!userId) return;
+  try {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('is_admin')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) throw error;
+
+    if (data) {
+      isAdmin.value = data.is_admin || false;
+    }
+  } catch (error) {
+    console.error('Error al cargar datos usuario:', error);
+  }
+};
 
 const loadFavourites = async () => {
+  if (!userId) return;
+
   isLoading.value = true;
+
   const { data, error } = await supabase
-    .from<FavouritePlay>('Favorite_play')
+    .from('Favorite_play')
     .select('id_play, play(id, title, year, page)')
     .eq('id_user', userId);
 
   if (error) {
-    errorMessage.value = 'No es poden carregar les obres favorites.';
-    console.error(error);
+    console.error('Error carregant favorits:', error.message);
   } else {
-    favouritesWithPage.value = data;
+    favouritesWithPage.value = data || [];
+    console.log('Favorits carregats:', favouritesWithPage.value);
   }
+
   isLoading.value = false;
 };
 
-const removeFromFavourites = async (playId: number) => {
-  console.log('Eliminant favorit per a l\'usuari:', userId, 'i obra:', playId);
+const deleteFavourite = async (playId: number) => {
+  console.log('Intentando borrar favorito:', { userId, playId });
+
+  if (!userId || !playId) {
+    console.warn('userId o playId no válidos');
+    return;
+  }
+
   const { error } = await supabase
     .from('Favorite_play')
     .delete()
@@ -133,18 +163,21 @@ const removeFromFavourites = async (playId: number) => {
     .eq('id_play', playId);
 
   if (error) {
-    console.error('Error eliminant de favorits:', error.message);
+    console.error('Error eliminant favorit:', error.message);
   } else {
-    favouritesWithPage.value = favouritesWithPage.value.filter(fav => fav.play.id !== playId);
+    alert('Obra eliminada dels favorits');
+    favouritesWithPage.value = favouritesWithPage.value.filter(fav => fav.id_play !== playId);
+    console.log(`Obra ${playId} eliminada dels favorits.`);
   }
 };
 
 const goToPlay = (play: Play) => {
-  router.push({ path: '/infoPlay', query: { id: play.id.toString(), userId: userId } });
+  router.push({ path: '/infoPlay', query: { id: play.id.toString(), userId } });
 };
 
-onMounted(() => {
-  loadFavourites();
+onMounted(async () => {
+  await loadUserData();
+  await loadFavourites();
 });
 </script>
 
