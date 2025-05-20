@@ -5,32 +5,69 @@ import {
   IonButton, IonTextarea, IonLabel, IonItem,
   IonIcon, IonSpinner
 } from '@ionic/vue';
-import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, onMounted, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import supabase from '@/supabaseClient';
 import { filmOutline, starOutline, personOutline, heartOutline, heartDislikeOutline } from 'ionicons/icons';
 
 const route = useRoute();
+const router = useRouter();
+
 const playId = ref<string | null>(null);
 const userId = ref<string | null>(null);
-const userName = ref<string>('Usuari');
+const isAdmin = ref(false);
+const userLoaded = ref(false);
 
 const play = ref<any>(null);
 const isLoading = ref(true);
 const errorMessage = ref('');
-const isAdmin = ref(false);
 const reviews = ref<any[]>([]);
-const isFavorite = ref(false); // Nueva variable para el estado de favorito
+const isFavorite = ref(false);
 
 const newReviewText = ref('');
 const newReviewRating = ref<number | null>(null);
 
+const isLoggedIn = computed(() => !!userId.value);
+
+// Cargar id de la obra y userId desde query param
 onMounted(() => {
   const idParam = route.query.id;
   playId.value = typeof idParam === 'string' ? idParam : null;
+  const userParam = route.query.userId;
+  userId.value = typeof userParam === 'string' ? userParam : null;
+
+  loadUser();
+  loadPlay();
+  loadReviews();
 });
 
-const loadPlay = async () => {
+async function loadUser() {
+  if (!userId.value) {
+    userLoaded.value = true;
+    return;
+  }
+  try {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('is_admin')
+      .eq('user_id', userId.value)
+      .single();
+
+    if (!error && data) {
+      isAdmin.value = data.is_admin;
+    } else {
+      isAdmin.value = false;
+    }
+  } catch {
+    isAdmin.value = false;
+  }
+  if (playId.value) {
+    await checkIfFavorite();
+  }
+  userLoaded.value = true;
+}
+
+async function loadPlay() {
   if (!playId.value) {
     errorMessage.value = 'No s\'ha proporcionat un ID vàlid de l\'obra.';
     isLoading.value = false;
@@ -46,37 +83,18 @@ const loadPlay = async () => {
     if (error) throw error;
 
     play.value = data;
+
     if (userId.value) {
-      await checkIfFavorite(); // Comprobar si es favorito al cargar la obra
+      await checkIfFavorite();
     }
-  } catch (error: any) {
+  } catch {
     errorMessage.value = 'No s\'ha pogut carregar la informació de l\'obra.';
   } finally {
     isLoading.value = false;
   }
-};
+}
 
-const loadUser = async () => {
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) return;
-
-  userId.value = data.user.id;
-
-  const { data: userData } = await supabase
-    .from('usuarios')
-    .select('name, is_admin')
-    .eq('user_id', userId.value)
-    .single();
-
-  userName.value = userData?.name || 'Usuari';
-  isAdmin.value = userData?.is_admin || false;
-
-  if (playId.value) {
-    await checkIfFavorite(); // Comprobar si es favorito al cargar el usuario
-  }
-};
-
-const loadReviews = async () => {
+async function loadReviews() {
   if (!playId.value) return;
   const { data, error } = await supabase
     .from('review')
@@ -88,21 +106,22 @@ const loadReviews = async () => {
     const userIds = [...new Set(data.map(r => r.id_user))];
     const { data: usersData } = await supabase
       .from('usuarios')
-      .select('user_id, username')
+      .select('user_id, name')
       .in('user_id', userIds);
 
-    const usersMap = new Map(usersData?.map(u => [u.user_id, u.username]));
+    const usersMap = new Map(usersData?.map(u => [u.user_id, u.name]));
 
     reviews.value = data.map(r => ({
       id: r.id,
       text: r.opinion,
       rating: r.qualification,
-      user: usersMap.get(r.id_user) || 'Usuari desconegut'
+      user: usersMap.get(r.id_user) || 'Usuari desconegut',
+      userId: r.id_user
     }));
   }
-};
+}
 
-const checkIfFavorite = async () => {
+async function checkIfFavorite() {
   if (!userId.value || !playId.value) return;
   const { data, error } = await supabase
     .from('Favorite_play')
@@ -112,9 +131,9 @@ const checkIfFavorite = async () => {
     .single();
 
   isFavorite.value = !!data;
-};
+}
 
-const addToFavorites = async () => {
+async function addToFavorites() {
   if (!userId.value || !playId.value) {
     alert('Cal iniciar sessió per afegir a favorits.');
     return;
@@ -128,12 +147,11 @@ const addToFavorites = async () => {
   } else {
     isFavorite.value = true;
   }
-};
+}
 
-const removeFromFavorites = async () => {
-  if (!userId.value || !playId.value) {
-    return;
-  }
+async function removeFromFavorites() {
+  if (!userId.value || !playId.value) return;
+
   const { error } = await supabase
     .from('Favorite_play')
     .delete()
@@ -145,7 +163,7 @@ const removeFromFavorites = async () => {
   } else {
     isFavorite.value = false;
   }
-};
+}
 
 async function submitReview() {
   if (!userId.value) {
@@ -160,7 +178,6 @@ async function submitReview() {
     alert('La valoració ha de ser entre 0 i 10.');
     return;
   }
-
   if (!playId.value) {
     alert('Error: L\'ID de l\'obra no és vàlid.');
     return;
@@ -185,8 +202,14 @@ async function submitReview() {
   await loadReviews();
 }
 
-async function deleteReview(id: string) {
+async function deleteReview(id: string, reviewUserId: string) {
   if (!userId.value) return;
+
+  // Solo admin o autor puede borrar
+  if (!isAdmin.value && userId.value !== reviewUserId) {
+    alert('No tens permisos per eliminar aquesta ressenya.');
+    return;
+  }
 
   const { error } = await supabase
     .from('review')
@@ -195,50 +218,46 @@ async function deleteReview(id: string) {
 
   if (!error) await loadReviews();
 }
-
-onMounted(async () => {
-  await loadUser();
-  await loadPlay();
-  await loadReviews();
-});
 </script>
 
 <template>
   <ion-page>
     <ion-header translucent>
       <ion-toolbar color="dark">
-        <ion-title class="flex items-center space-x-2">
-          <ion-icon :icon="filmOutline" class="text-green-400 w-5 h-5"></ion-icon>
-          <span class="text-green-400">Butaca1</span>
+        <ion-title class="flex items-center space-x-2 text-green-400">
+          <ion-icon :icon="filmOutline" class="w-5 h-5" />
+          <span>Butaca1</span>
         </ion-title>
 
         <ion-buttons slot="end" class="space-x-2">
-          <ion-button :href="`/Principal${userId ? '?userId=' + userId : ''}`">
+          <ion-button href="/Principal">
             <span class="text-white text-sm">Inici</span>
           </ion-button>
 
-          <ion-button v-if="userId" :href="`/infoFavourites?userId=${userId}`">
+          <ion-button v-if="isLoggedIn" :href="`/infoFavourites?userId=${userId}`">
             <span class="text-white text-sm">Favorits</span>
           </ion-button>
 
-          <ion-button v-if="isAdmin" :href="`/manageContent?userId=${userId}`">
+          <ion-button v-if="userLoaded && isAdmin" :href="`/manageContent?userId=${userId}`">
             <span class="text-white text-sm">Gestionar continguts</span>
           </ion-button>
         </ion-buttons>
 
         <ion-buttons slot="end">
-          <template v-if="userId">
-            <ion-button :href="`/infoUser?userId=${userId}`">
-              <ion-icon :icon="personOutline" class="text-white w-5 h-5" />
-            </ion-button>
-          </template>
-          <template v-else>
-            <ion-button href="/login">
-              <span class="text-white text-sm">Iniciar Sesión</span>
-            </ion-button>
-            <ion-button href="/Register">
-              <span class="text-white text-sm">Registro</span>
-            </ion-button>
+          <template v-if="userLoaded">
+            <template v-if="isLoggedIn">
+              <ion-button :href="`/infoUser?userId=${userId}`">
+                <ion-icon :icon="personOutline" class="text-white w-5 h-5" />
+              </ion-button>
+            </template>
+            <template v-else>
+              <ion-button href="/login">
+                <span class="text-white text-sm">Iniciar Sesión</span>
+              </ion-button>
+              <ion-button href="/Register">
+                <span class="text-white text-sm">Registro</span>
+              </ion-button>
+            </template>
           </template>
         </ion-buttons>
       </ion-toolbar>
@@ -249,7 +268,9 @@ onMounted(async () => {
         <ion-spinner name="crescent" />
       </div>
 
-      <div v-else-if="errorMessage">{{ errorMessage }}</div>
+      <div v-else-if="errorMessage" class="ion-padding ion-text-center ion-color-danger">
+        {{ errorMessage }}
+      </div>
 
       <div v-else-if="play">
         <ion-card class="mb-6 bg-white rounded-lg shadow-md">
@@ -263,14 +284,14 @@ onMounted(async () => {
             <p><strong>Creador:</strong> {{ play.creator }}</p>
             <p><strong>Personatges:</strong> {{ play.characters }}</p>
             <ion-button
-              v-if="userId"
+              v-if="isLoggedIn"
               expand="block"
               :fill="isFavorite ? 'solid' : 'outline'"
               :color="isFavorite ? 'danger' : 'primary'"
               @click="isFavorite ? removeFromFavorites() : addToFavorites()"
               class="mt-4"
             >
-              <ion-icon :icon="isFavorite ? heartDislikeOutline : heartOutline" slot="start"></ion-icon>
+              <ion-icon :icon="isFavorite ? heartDislikeOutline : heartOutline" slot="start" />
               {{ isFavorite ? 'Treure de favorits' : 'Afegir a favorits' }}
             </ion-button>
           </ion-card-content>
@@ -281,7 +302,7 @@ onMounted(async () => {
 
           <ion-item>
             <ion-label position="stacked">Comentari</ion-label>
-            <ion-textarea v-model="newReviewText" :disabled="!userId" placeholder="Què t'ha semblat l'obra?" />
+            <ion-textarea v-model="newReviewText" :disabled="!isLoggedIn" placeholder="Què t'ha semblat l'obra?" />
           </ion-item>
 
           <ion-item>
@@ -292,7 +313,7 @@ onMounted(async () => {
                 :key="n"
                 @click="newReviewRating = n"
                 :color="newReviewRating >= n ? 'warning' : 'medium'"
-                :disabled="!userId"
+                :disabled="!isLoggedIn"
               >
                 <ion-icon :icon="starOutline" />
               </ion-button>
@@ -300,38 +321,40 @@ onMounted(async () => {
             </div>
           </ion-item>
 
-          <ion-button expand="block" class="mt-4" @click="submitReview" :disabled="!userId">
+          <ion-button
+            expand="block"
+            color="success"
+            :disabled="!isLoggedIn || !newReviewText || newReviewRating === null"
+            @click="submitReview"
+            class="mt-4"
+          >
             Enviar ressenya
           </ion-button>
-
-          <div v-if="!userId" class="mt-2 text-red-600 text-center">
-            Per enviar una ressenya, si us plau <a href="/login" class="underline">inicia sessió</a> o <a href="/Register" class="underline">registra't</a>.
-          </div>
         </ion-card>
 
-        <div class="mt-6 space-y-4">
-          <ion-card
-            v-for="review in reviews"
-            :key="review.id"
-            class="w-full p-4 bg-white rounded-md shadow"
-          >
-            <ion-card-header>
-              <ion-card-title>{{ review.user }} - ⭐ {{ review.rating }}/10</ion-card-title>
-            </ion-card-header>
-            <ion-card-content>
-              <p>{{ review.text }}</p>
-              <ion-button
-                v-if="userId"
-                fill="clear"
-                color="danger"
-                size="small"
-                @click="deleteReview(review.id)"
-              >
-                Eliminar
-              </ion-button>
-            </ion-card-content>
-          </ion-card>
-        </div>
+        <ion-card class="mt-6 bg-white rounded-lg shadow">
+          <h3 class="text-lg font-semibold mb-2">Ressenyes</h3>
+          <div v-if="reviews.length === 0">Encara no hi ha ressenyes.</div>
+
+          <div v-for="review in reviews" :key="review.id" class="mb-4 p-4 border rounded">
+            <div class="flex justify-between items-center mb-1">
+              <strong>{{ review.user }}</strong>
+              <div>
+                <span class="mr-2 font-semibold">{{ review.rating }}/10</span>
+                <ion-button
+                  v-if="isAdmin || userId === review.userId"
+                  fill="clear"
+                  color="danger"
+                  size="small"
+                  @click="deleteReview(review.id, review.userId)"
+                >
+                  Eliminar
+                </ion-button>
+              </div>
+            </div>
+            <p>{{ review.text }}</p>
+          </div>
+        </ion-card>
       </div>
     </ion-content>
   </ion-page>
@@ -340,8 +363,7 @@ onMounted(async () => {
 <style scoped>
 .movie-image {
   width: 100%;
-  height: 250px;
-  object-fit: cover;
+  height: auto;
   border-radius: 0.5rem;
 }
 </style>
