@@ -363,7 +363,8 @@ async function deleteReview(id: string, reviewUserId: string) {
 <style scoped>
 .movie-image {
   width: 100%;
-  height: auto;
+  height: 250px; /* Estableix l'alçada desitjada */
+  object-fit: cover;
   border-radius: 0.5rem;
 }
 </style>
