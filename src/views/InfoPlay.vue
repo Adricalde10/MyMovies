@@ -2,13 +2,13 @@
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle, IonCardContent,
-  IonButton, IonButtons, IonTextarea, IonLabel, IonItem, IonList,
+  IonButton, IonTextarea, IonLabel, IonItem, IonList,
   IonIcon, IonSpinner
 } from '@ionic/vue';
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import supabase from '@/supabaseClient';
-import { filmOutline, personOutline, starOutline } from 'ionicons/icons';
+import { filmOutline, starOutline } from 'ionicons/icons';
 
 const route = useRoute();
 const playId = ref<string | null>(null);
@@ -24,7 +24,6 @@ const reviews = ref<any[]>([]);
 const newReviewText = ref('');
 const newReviewRating = ref<number | null>(null);
 
-// Inicializar ID del play asegurando que es string o null
 onMounted(() => {
   const idParam = route.query.id;
   playId.value = typeof idParam === 'string' ? idParam : null;
@@ -73,16 +72,19 @@ const loadReviews = async () => {
   if (!playId.value) return;
   const { data, error } = await supabase
     .from('review')
-    .select('id, opinion, qualification, id_user, created_at, usuarios(username)')
+    // Cambiado para evitar problema con relación usuarios
+    .select('id, opinion, qualification, id_user, created_at')
     .eq('id_play', playId.value)
     .order('created_at', { ascending: false });
 
-  if (!error) {
+  console.log('Reviews data:', data, 'Error:', error);
+
+  if (!error && data) {
     reviews.value = data.map(r => ({
       id: r.id,
       text: r.opinion,
       rating: r.qualification,
-      user: r.usuarios?.username || 'Anònim',
+      user: 'Usuari de prova', // Para test, nombre fijo
     }));
   }
 };
