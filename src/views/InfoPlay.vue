@@ -1,28 +1,14 @@
 <script setup lang="ts">
 import {
-  IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
-  IonCardContent,
-  IonButton,
-  IonButtons,
-  IonTextarea,
-  IonLabel,
-  IonItem,
-  IonList,
-  IonIcon,
-  IonSpinner
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
+  IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle, IonCardContent,
+  IonButton, IonTextarea, IonLabel, IonItem,
+  IonIcon, IonSpinner
 } from '@ionic/vue';
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import supabase from '@/supabaseClient';
-import { filmOutline, personOutline, starOutline, heartOutline, heartDislikeOutline } from 'ionicons/icons';
+import { filmOutline, starOutline, personOutline } from 'ionicons/icons';
 
 const route = useRoute();
 const playId = ref<string | null>(null);
@@ -34,12 +20,10 @@ const isLoading = ref(true);
 const errorMessage = ref('');
 const isAdmin = ref(false);
 const reviews = ref<any[]>([]);
-const isFavorite = ref(false);
 
 const newReviewText = ref('');
 const newReviewRating = ref<number | null>(null);
 
-// Inicialitzar ID del play assegurant que es string o null
 onMounted(() => {
   const idParam = route.query.id;
   playId.value = typeof idParam === 'string' ? idParam : null;
@@ -76,81 +60,37 @@ const loadUser = async () => {
 
   const { data: userData } = await supabase
     .from('usuarios')
-    .select('username, is_admin')
+    .select('name, is_admin')
     .eq('user_id', userId.value)
     .single();
 
-  userName.value = userData?.username || 'Usuari';
+  userName.value = userData?.name || 'Usuari';
   isAdmin.value = userData?.is_admin || false;
-
-  // Check if the play is already in favorites after loading user
-  if (userId.value && playId.value) {
-    await checkIfFavorite();
-  }
 };
 
 const loadReviews = async () => {
   if (!playId.value) return;
   const { data, error } = await supabase
     .from('review')
-    .select('id, opinion, qualification, id_user, created_at, usuarios(username)')
+    .select('id, opinion, qualification, id_user, created_at')
     .eq('id_play', playId.value)
     .order('created_at', { ascending: false });
 
-  if (!error) {
+  if (!error && data) {
+    const userIds = [...new Set(data.map(r => r.id_user))];
+    const { data: usersData } = await supabase
+      .from('usuarios')
+      .select('user_id, username')
+      .in('user_id', userIds);
+
+    const usersMap = new Map(usersData?.map(u => [u.user_id, u.username]));
+
     reviews.value = data.map(r => ({
       id: r.id,
       text: r.opinion,
       rating: r.qualification,
-      user: r.usuarios?.username || 'Anònim',
+      user: usersMap.get(r.id_user) || 'Usuari desconegut'
     }));
-  }
-};
-
-const checkIfFavorite = async () => {
-  if (!userId.value || !playId.value) return;
-  const { data, error } = await supabase
-    .from('Favorite_play')
-    .select('id')
-    .eq('id_user', userId.value)
-    .eq('id_play', playId.value)
-    .single();
-
-  isFavorite.value = !!data;
-};
-
-const addToFavorites = async () => {
-  if (!userId.value || !playId.value) {
-    alert('Cal iniciar sessió per afegir a favorits.');
-    return;
-  }
-  const { error } = await supabase
-    .from('Favorite_play')
-    .insert([{ id_user: userId.value, id_play: playId.value }]);
-
-  if (error) {
-    alert('Error al afegir a favorits: ' + error.message);
-  } else {
-    isFavorite.value = true;
-    alert('Afegit a favorits!');
-  }
-};
-
-const removeFromFavorites = async () => {
-  if (!userId.value || !playId.value) {
-    return;
-  }
-  const { error } = await supabase
-    .from('Favorite_play')
-    .delete()
-    .eq('id_user', userId.value)
-    .eq('id_play', playId.value);
-
-  if (error) {
-    alert('Error al treure de favorits: ' + error.message);
-  } else {
-    isFavorite.value = false;
-    alert('Tret de favorits.');
   }
 };
 
@@ -212,6 +152,7 @@ onMounted(async () => {
 
 <template>
   <ion-page>
+    <!-- ✅ Nuevo encabezado con navegación -->
     <ion-header translucent>
       <ion-toolbar color="dark">
         <ion-title class="flex items-center space-x-2">
@@ -224,15 +165,11 @@ onMounted(async () => {
             <span class="text-white text-sm">Inici</span>
           </ion-button>
 
-          <ion-button
-            v-if="userId"
-            :href="`/infoFavourites?userId=${userId}`">
+          <ion-button v-if="userId" :href="`/infoFavourites?userId=${userId}`">
             <span class="text-white text-sm">Favorits</span>
           </ion-button>
 
-          <ion-button
-            v-if="isAdmin"
-            :href="`/manageContent?userId=${userId}`">
+          <ion-button v-if="isAdmin" :href="`/manageContent?userId=${userId}`">
             <span class="text-white text-sm">Gestionar continguts</span>
           </ion-button>
         </ion-buttons>
@@ -273,17 +210,6 @@ onMounted(async () => {
             <p>{{ play.description }}</p>
             <p><strong>Creador:</strong> {{ play.creator }}</p>
             <p><strong>Personatges:</strong> {{ play.characters }}</p>
-            <ion-button
-              v-if="userId"
-              expand="block"
-              :fill="isFavorite ? 'solid' : 'outline'"
-              :color="isFavorite ? 'danger' : 'primary'"
-              @click="isFavorite ? removeFromFavorites() : addToFavorites()"
-              class="mt-4"
-            >
-              <ion-icon :icon="isFavorite ? heartDislikeOutline : heartOutline" slot="start"></ion-icon>
-              {{ isFavorite ? 'Treure de favorits' : 'Afegir a favorits' }}
-            </ion-button>
           </ion-card-content>
         </ion-card>
 
@@ -314,33 +240,32 @@ onMounted(async () => {
           <ion-button expand="block" class="mt-4" @click="submitReview" :disabled="!userId">
             Enviar ressenya
           </ion-button>
-
-          <div v-if="!userId" class="mt-2 text-red-600 text-center">
-            Per enviar una ressenya, si us plau <a href="/login" class="underline">inicia sessió</a> o <a href="/Register" class="underline">registra't</a>.
-          </div>
         </ion-card>
 
-        <ion-list class="mt-6">
-          <ion-item v-for="review in reviews" :key="review.id">
-            <ion-card class="w-full p-4 bg-white rounded-md shadow">
-              <ion-card-header>
-                <ion-card-title>{{ review.user }} - ⭐ {{ review.rating }}/10</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
-                <p>{{ review.text }}</p>
-                <ion-button
-                  v-if="userId"
-                  fill="clear"
-                  color="danger"
-                  size="small"
-                  @click="deleteReview(review.id)"
-                >
-                  Eliminar
-                </ion-button>
-              </ion-card-content>
-            </ion-card>
-          </ion-item>
-        </ion-list>
+        <!-- ✅ Sección de reseñas -->
+        <div class="mt-6 space-y-4">
+          <ion-card
+            v-for="review in reviews"
+            :key="review.id"
+            class="w-full p-4 bg-white rounded-md shadow"
+          >
+            <ion-card-header>
+              <ion-card-title>{{ review.user }} - ⭐ {{ review.rating }}/10</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <p>{{ review.text }}</p>
+              <ion-button
+                v-if="userId"
+                fill="clear"
+                color="danger"
+                size="small"
+                @click="deleteReview(review.id)"
+              >
+                Eliminar
+              </ion-button>
+            </ion-card-content>
+          </ion-card>
+        </div>
       </div>
     </ion-content>
   </ion-page>
