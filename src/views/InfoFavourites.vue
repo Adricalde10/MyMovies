@@ -90,7 +90,7 @@ import { trashOutline, filmOutline, personOutline } from 'ionicons/icons';
 import { supabase } from '../supabaseClient';
 
 interface Play {
-  id: number;
+  id_play: number; // Asegúrate que la propiedad sea 'id_play'
   title: string;
   year: string;
   page?: string | null;
@@ -135,7 +135,7 @@ const loadFavourites = async () => {
 
   const { data, error } = await supabase
     .from('Favorite_play')
-    .select('id_play, play(id, title, year, page)')
+    .select('id_play, play(id_play, title, year, page)') // Selecciona 'id_play' dentro de 'play'
     .eq('id_user', userId);
 
   if (error) {
@@ -172,7 +172,7 @@ const deleteFavourite = async (playId: number) => {
 };
 
 const goToPlay = (play: Play) => {
-  router.push({ path: '/infoPlay', query: { id: play.id.toString(), userId } });
+  router.push({ path: '/infoPlay', query: { id: play.id_play.toString(), userId } }); // Usa play.id_play
 };
 
 onMounted(async () => {
