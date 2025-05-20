@@ -47,7 +47,7 @@ const isAdmin = ref(false);
 const goToPlayInfo = (movie: any) => {
   router.push({
     path: '/infoPlay',
-    query: { id: movie.id , userId: userId, }, // Passa l'ID de l'obra com a query parameter
+    query: { id: movie.id_play , userId: userId, }, // Passa l'ID de l'obra com a query parameter
   });
 };
 // Carga datos usuario para saber si es admin
@@ -76,7 +76,7 @@ const loadPlays = async () => {
     const { data, error } = await supabase
       .from('play')
       .select('*')
-      .order('id', { ascending: true });
+      .order('id_play', { ascending: true });
 
     if (error) throw error;
 
@@ -111,7 +111,7 @@ const filteredMovies = computed(() => {
 
 // Paginación
 const currentPage = ref(1);
-const moviesPerPage = 9; // 3x3 grid
+const moviesPerPage = 6; // 3x3 grid
 const totalPages = computed(() => Math.ceil(filteredMovies.value.length / moviesPerPage));
 
 const currentMovies = computed(() => {
@@ -260,4 +260,3 @@ const goToNextPage = () => {
   margin-right: 1rem;
 }
 </style>
-
