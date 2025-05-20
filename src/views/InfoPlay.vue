@@ -8,7 +8,7 @@ import {
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import supabase from '@/supabaseClient';
-import { filmOutline, starOutline, personOutline } from 'ionicons/icons';
+import { filmOutline, starOutline, personOutline, heartOutline, heartDislikeOutline } from 'ionicons/icons';
 
 const route = useRoute();
 const playId = ref<string | null>(null);
@@ -20,6 +20,7 @@ const isLoading = ref(true);
 const errorMessage = ref('');
 const isAdmin = ref(false);
 const reviews = ref<any[]>([]);
+const isFavorite = ref(false); // Nueva variable para el estado de favorito
 
 const newReviewText = ref('');
 const newReviewRating = ref<number | null>(null);
@@ -45,6 +46,9 @@ const loadPlay = async () => {
     if (error) throw error;
 
     play.value = data;
+    if (userId.value) {
+      await checkIfFavorite(); // Comprobar si es favorito al cargar la obra
+    }
   } catch (error: any) {
     errorMessage.value = 'No s\'ha pogut carregar la informació de l\'obra.';
   } finally {
@@ -66,6 +70,10 @@ const loadUser = async () => {
 
   userName.value = userData?.name || 'Usuari';
   isAdmin.value = userData?.is_admin || false;
+
+  if (playId.value) {
+    await checkIfFavorite(); // Comprobar si es favorito al cargar el usuario
+  }
 };
 
 const loadReviews = async () => {
@@ -91,6 +99,51 @@ const loadReviews = async () => {
       rating: r.qualification,
       user: usersMap.get(r.id_user) || 'Usuari desconegut'
     }));
+  }
+};
+
+const checkIfFavorite = async () => {
+  if (!userId.value || !playId.value) return;
+  const { data, error } = await supabase
+    .from('Favorite_play')
+    .select('id')
+    .eq('id_user', userId.value)
+    .eq('id_play', playId.value)
+    .single();
+
+  isFavorite.value = !!data;
+};
+
+const addToFavorites = async () => {
+  if (!userId.value || !playId.value) {
+    alert('Cal iniciar sessió per afegir a favorits.');
+    return;
+  }
+  const { error } = await supabase
+    .from('Favorite_play')
+    .insert([{ id_user: userId.value, id_play: playId.value }]);
+
+  if (error) {
+    alert('Error al afegir a favorits: ' + error.message);
+  } else {
+    isFavorite.value = true;
+  }
+};
+
+const removeFromFavorites = async () => {
+  if (!userId.value || !playId.value) {
+    return;
+  }
+  const { error } = await supabase
+    .from('Favorite_play')
+    .delete()
+    .eq('id_user', userId.value)
+    .eq('id_play', playId.value);
+
+  if (error) {
+    alert('Error al treure de favorits: ' + error.message);
+  } else {
+    isFavorite.value = false;
   }
 };
 
@@ -152,7 +205,6 @@ onMounted(async () => {
 
 <template>
   <ion-page>
-    <!-- ✅ Nuevo encabezado con navegación -->
     <ion-header translucent>
       <ion-toolbar color="dark">
         <ion-title class="flex items-center space-x-2">
@@ -210,6 +262,17 @@ onMounted(async () => {
             <p>{{ play.description }}</p>
             <p><strong>Creador:</strong> {{ play.creator }}</p>
             <p><strong>Personatges:</strong> {{ play.characters }}</p>
+            <ion-button
+              v-if="userId"
+              expand="block"
+              :fill="isFavorite ? 'solid' : 'outline'"
+              :color="isFavorite ? 'danger' : 'primary'"
+              @click="isFavorite ? removeFromFavorites() : addToFavorites()"
+              class="mt-4"
+            >
+              <ion-icon :icon="isFavorite ? heartDislikeOutline : heartOutline" slot="start"></ion-icon>
+              {{ isFavorite ? 'Treure de favorits' : 'Afegir a favorits' }}
+            </ion-button>
           </ion-card-content>
         </ion-card>
 
@@ -240,9 +303,12 @@ onMounted(async () => {
           <ion-button expand="block" class="mt-4" @click="submitReview" :disabled="!userId">
             Enviar ressenya
           </ion-button>
+
+          <div v-if="!userId" class="mt-2 text-red-600 text-center">
+            Per enviar una ressenya, si us plau <a href="/login" class="underline">inicia sessió</a> o <a href="/Register" class="underline">registra't</a>.
+          </div>
         </ion-card>
 
-        <!-- ✅ Sección de reseñas -->
         <div class="mt-6 space-y-4">
           <ion-card
             v-for="review in reviews"
