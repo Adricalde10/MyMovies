@@ -269,3 +269,4 @@ function deleteReview(index: number) {
   --ion-icon-size: 24px;
 }
 </style>
+
