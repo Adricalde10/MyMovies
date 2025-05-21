@@ -9,6 +9,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import supabase from '@/supabaseClient';
 import { filmOutline, starOutline, personOutline, heartOutline, heartDislikeOutline } from 'ionicons/icons';
+import { user } from '@/authStore';
 
 const route = useRoute();
 const router = useRouter();
@@ -33,8 +34,9 @@ const isLoggedIn = computed(() => !!userId.value);
 onMounted(() => {
   const idParam = route.query.id;
   playId.value = typeof idParam === 'string' ? idParam : null;
+
   const userParam = route.query.userId;
-  userId.value = typeof userParam === 'string' ? userParam : null;
+  userId.value = (typeof userParam === 'string' && userParam !== 'null' && userParam !== 'undefined') ? userParam : null;
 
   loadUser();
   loadPlay();
@@ -96,6 +98,7 @@ async function loadPlay() {
 
 async function loadReviews() {
   if (!playId.value) return;
+
   const { data, error } = await supabase
     .from('review')
     .select('id, opinion, qualification, id_user, created_at')
@@ -104,12 +107,23 @@ async function loadReviews() {
 
   if (!error && data) {
     const userIds = [...new Set(data.map(r => r.id_user))];
-    const { data: usersData } = await supabase
+
+    const { data: usersData, error: usersError } = await supabase
       .from('usuarios')
       .select('user_id, name')
       .in('user_id', userIds);
 
-    const usersMap = new Map(usersData?.map(u => [u.user_id, u.name]));
+    if (usersError) {
+      console.error('Error al cargar usuarios:', usersError);
+    }
+
+    console.log('Datos de usuarios:', usersData);
+
+    const usersMap = new Map(
+      (usersData || []).map(u => [u.user_id, u.name])
+    );
+
+    console.log('Mapa de usuarios:', Array.from(usersMap.entries()));
 
     reviews.value = data.map(r => ({
       id: r.id,
@@ -118,8 +132,11 @@ async function loadReviews() {
       user: usersMap.get(r.id_user) || 'Usuari desconegut',
       userId: r.id_user
     }));
+  } else {
+    console.error('Error al cargar reseñas:', error);
   }
 }
+
 
 async function checkIfFavorite() {
   if (!userId.value || !playId.value) return;
@@ -224,43 +241,44 @@ async function deleteReview(id: string, reviewUserId: string) {
   <ion-page>
     <ion-header translucent>
       <ion-toolbar color="dark">
-        <ion-title class="flex items-center space-x-2 text-green-400">
-          <ion-icon :icon="filmOutline" class="w-5 h-5" />
-          <span>Butaca1</span>
-        </ion-title>
+  <ion-title class="flex items-center space-x-2 text-green-400">
+    <ion-icon :icon="filmOutline" class="w-5 h-5" />
+    <span>Butaca1</span>
+  </ion-title>
 
-        <ion-buttons slot="end" class="space-x-2">
-          <ion-button :href="`/Principal?userId=${userId}`">
-            <span class="text-white text-sm">Inici</span>
-          </ion-button>
+  <ion-buttons slot="end" class="space-x-2">
+    <ion-button :href="`/Principal?userId=${userId}`">
+      <span class="text-white text-sm">Inici</span>
+    </ion-button>
 
-          <ion-button v-if="isLoggedIn" :href="`/infoFavourites?userId=${userId}`">
-            <span class="text-white text-sm">Favorits</span>
-          </ion-button>
+    <ion-button v-if="isLoggedIn" :href="`/infoFavourites?userId=${userId}`">
+      <span class="text-white text-sm">Favorits</span>
+    </ion-button>
 
-          <ion-button v-if="userLoaded && isAdmin" :href="`/manageContent?userId=${userId}`">
-            <span class="text-white text-sm">Gestionar continguts</span>
-          </ion-button>
-        </ion-buttons>
+    <ion-button v-if="userLoaded && isAdmin" :href="`/manageContent?userId=${userId}`">
+      <span class="text-white text-sm">Gestionar continguts</span>
+    </ion-button>
+  </ion-buttons>
 
-        <ion-buttons slot="end">
-          <template v-if="userLoaded">
-            <template v-if="isLoggedIn">
-              <ion-button :href="`/infoUser?userId=${userId}`">
-                <ion-icon :icon="personOutline" class="text-white w-5 h-5" />
-              </ion-button>
-            </template>
-            <template v-else>
-              <ion-button href="/login">
-                <span class="text-white text-sm">Iniciar Sesión</span>
-              </ion-button>
-              <ion-button href="/Register">
-                <span class="text-white text-sm">Registro</span>
-              </ion-button>
-            </template>
-          </template>
-        </ion-buttons>
-      </ion-toolbar>
+  <ion-buttons slot="end">
+    <template v-if="userLoaded">
+      <template v-if="isLoggedIn">
+        <ion-button :href="`/infoUser?userId=${userId}`">
+          <ion-icon :icon="personOutline" class="text-white w-5 h-5" />
+        </ion-button>
+      </template>
+      <template v-else>
+        <ion-button href="/login">
+          <span class="text-white text-sm">Iniciar Sesión</span>
+        </ion-button>
+        <ion-button href="/Register">
+          <span class="text-white text-sm">Registro</span>
+        </ion-button>
+      </template>
+    </template>
+  </ion-buttons>
+</ion-toolbar>
+
     </ion-header>
 
     <ion-content fullscreen class="ion-padding bg-gray-100 text-gray-900">
