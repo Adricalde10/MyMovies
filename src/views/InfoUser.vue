@@ -186,19 +186,19 @@ function closeInfoUser() {
           @click="triggerFileInput"
           type="button"
         >
-          Cambiar foto
+          Canviar foto
         </button>
       </div>
 
       <div v-if="loading" class="d-flex justify-content-center my-4">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Cargando...</span>
+          <span class="visually-hidden">Carregant...</span>
         </div>
       </div>
 
       <div v-else>
         <div class="mb-3">
-          <label for="username" class="form-label">Nombre de usuario</label>
+          <label for="username" class="form-label">Nom d'usuari</label>
           <input
             id="username"
             type="text"
@@ -209,7 +209,7 @@ function closeInfoUser() {
         </div>
 
         <div class="mb-3">
-          <label for="email" class="form-label">Correo electrónico</label>
+          <label for="email" class="form-label">Correu electronic</label>
           <input
             id="email"
             type="email"
@@ -224,16 +224,16 @@ function closeInfoUser() {
           class="btn btn-primary w-100 mb-3"
           role="button"
         >
-          Ver contenidos favoritos
+          Veure continguts favorits
         </a>
 
         <button
-          class="btn btn-success w-100 mb-3"
-          @click="saveChanges"
+           class="btn btn-primary w-100 mb-3"
+           @click="saveChanges"
           :disabled="loading"
           type="button"
-        >
-          Guardar cambios
+          >
+          Guardar canvis
         </button>
 
         <button
@@ -241,7 +241,7 @@ function closeInfoUser() {
           @click="deleteAccount"
           type="button"
         >
-          Eliminar cuenta
+          Eliminar compte
         </button>
 
         <button
@@ -249,7 +249,7 @@ function closeInfoUser() {
           @click="logout"
           type="button"
         >
-          Cerrar sesión
+          Tancar sessió
         </button>
 
         <p v-if="errorMessage" class="text-danger mt-3 text-center">
