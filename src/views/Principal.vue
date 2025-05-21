@@ -1,3 +1,103 @@
+<template>
+  <ion-page>
+    <ion-header translucent>
+      <ion-toolbar color="dark" class="toolbar-layout">
+        <ion-title class="title-aligned flex items-center space-x-2 text-green-400">
+          <ion-icon :icon="filmOutline" class="w-5 h-5"></ion-icon>
+          <span>Butaca1</span>
+        </ion-title>
+
+        <ion-buttons slot="end" class="buttons-right">
+          <template v-if="userId">
+            <ion-button :href="`/InfoFavourites?userId=${userId}`" size="small">
+              <span class="text-white text-sm">Favorits</span>
+            </ion-button>
+            <ion-button v-if="isAdmin" :href="`/ManageContent?userId=${userId}`" size="small">
+              <span class="text-white text-sm">Gestionar continguts</span>
+            </ion-button>
+          </template>
+          <template v-else>
+            <ion-button href="/login" size="small">
+              <span class="text-white text-sm">Iniciar Sessió </span>
+            </ion-button>
+            <ion-button href="/Register" size="small">
+              <span class="text-white text-sm">Registre</span>
+            </ion-button>
+          </template>
+        </ion-buttons>
+
+        <div class="searchbar-container">
+          <ion-searchbar
+            v-model="searchText"
+            placeholder="Buscar obres o dramaturgs"
+            mode="ios"
+            color="light"
+            class="searchbar-centered"
+          />
+        </div>
+
+        <ion-buttons slot="end" v-if="userId">
+          <ion-button :href="`/infoUser?userId=${userId}`" size="small">
+            <ion-icon :icon="personOutline" />
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content fullscreen class="ion-padding bg-gray-50 text-gray-900">
+      <div v-if="isLoading" class="ion-text-center">
+        <ion-spinner name="crescent" />
+      </div>
+
+      <div v-else-if="errorMessage">
+        <p>{{ errorMessage }}</p>
+      </div>
+
+      <div v-else>
+        <h2 class="text-2xl font-bold mb-4">Descobreix Teatres</h2>
+
+        <ion-grid>
+          <ion-row>
+            <ion-col
+              v-for="(movie, movieIndex) in currentMovies"
+              :key="movieIndex"
+              :size-xs="12"
+              :size-sm="6"
+              :size-md="4"
+            >
+              <ion-card class="rounded-lg overflow-hidden shadow-md" @click="goToPlayInfo(movie)">
+                <img :src="movie.page" :alt="movie.title" class="movie-image" />
+                <ion-card-header>
+                  <ion-card-title class="text-sm font-bold">{{ movie.title }}</ion-card-title>
+                  <ion-card-subtitle class="text-xs text-gray-600">{{ movie.year }}</ion-card-subtitle>
+                </ion-card-header>
+              </ion-card>
+            </ion-col>
+          </ion-row>
+        </ion-grid>
+
+        <ion-footer class="ion-no-border">
+          <ion-toolbar color="dark">
+            <ion-buttons slot="start">
+              <ion-button :disabled="currentPage === 1" @click="goToPreviousPage">
+                Anterior
+              </ion-button>
+            </ion-buttons>
+
+            <ion-title>{{ currentPage }} / {{ totalPages }}</ion-title>
+
+            <ion-buttons slot="end">
+              <ion-button :disabled="currentPage === totalPages" @click="goToNextPage">
+                Seguent
+              </ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-footer>
+      </div>
+    </ion-content>
+  </ion-page>
+</template>
+
 <script setup lang="ts">
 import {
   IonPage,
@@ -22,7 +122,7 @@ import {
 
 import { filmOutline, personOutline } from 'ionicons/icons';
 import { ref, computed, onMounted } from 'vue';
-import { useRoute,useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import supabase from '@/supabaseClient';
 
 // Usuario desde query
@@ -47,7 +147,7 @@ const isAdmin = ref(false);
 const goToPlayInfo = (movie: any) => {
   router.push({
     path: '/infoPlay',
-    query: { id: movie.id_play , userId: userId, }, // Passa l'ID de l'obra com a query parameter
+    query: { id: movie.id_play, userId: userId }, // Passa l'ID de l'obra com a query parameter
   });
 };
 // Carga datos usuario para saber si es admin
@@ -111,19 +211,28 @@ const filteredMovies = computed(() => {
 
 // Paginación
 const currentPage = ref(1);
-const moviesPerPage = 6; // 3x3 grid
-const totalPages = computed(() => Math.ceil(filteredMovies.value.length / moviesPerPage));
+const moviesPerPage = computed(() => {
+  const width = window.innerWidth;
+  if (width < 600) {
+    return 1; // 1 columna en pantalles molt petites
+  } else if (width < 960) {
+    return 2; // 2 columnes en pantalles petites
+  } else {
+    return 6; // 3 columnes en pantalles mitjanes i grans
+  }
+});
+const totalPages = computed(() => Math.ceil(filteredMovies.value.length / moviesPerPage.value));
 
 const currentMovies = computed(() => {
-  const start = (currentPage.value - 1) * moviesPerPage;
-  const end = start + moviesPerPage;
+  const start = (currentPage.value - 1) * moviesPerPage.value;
+  const end = start + moviesPerPage.value;
   return filteredMovies.value.slice(start, end);
 });
 
 const movieChunks = computed(() => {
   const chunks = [];
-  for (let i = 0; i < currentMovies.value.length; i += 3) {
-    chunks.push(currentMovies.value.slice(i, i + 3));
+  for (let i = 0; i < currentMovies.value.length; i += moviesPerPage.value) {
+    chunks.push(currentMovies.value.slice(i, i + moviesPerPage.value));
   }
   return chunks;
 });
@@ -137,119 +246,10 @@ const goToNextPage = () => {
 };
 </script>
 
-<template>
-  <ion-page>
-    <!-- HEADER -->
-    <ion-header translucent>
-      <ion-toolbar color="dark">
-        <ion-title class="text-green-400 flex items-center space-x-2">
-          <ion-icon :icon="filmOutline"></ion-icon>
-          <span>Butaca1</span>
-        </ion-title>
-
-        <ion-buttons slot="end" class="space-x-2">
-          <template v-if="userId">
-            <ion-button :href="`/InfoFavourites?userId=${userId}`">
-              <span class="text-white text-sm">Favorits</span>
-            </ion-button>
-            <ion-button v-if="isAdmin" :href="`/ManageContent?userId=${userId}`">
-              <span class="text-white text-sm">Gestionar continguts</span>
-            </ion-button>
-          </template>
-        </ion-buttons>
-
-        <div class="px-4 pt-4">
-          <ion-searchbar
-            v-model="searchText"
-            placeholder="Buscar obres o dramaturgs"
-            mode="ios"
-            color="light"
-            class="searchbar-small"
-          />
-        </div>
-
-        <ion-buttons slot="end">
-          <template v-if="userId">
-            <ion-button :href="`/infoUser?userId=${userId}`">
-              <ion-icon :icon="personOutline" />
-            </ion-button>
-          </template>
-          <template v-else>
-            <ion-button href="/login">
-              <span class="text-white text-sm">Iniciar Sesión </span>
-            </ion-button>
-            <ion-button href="/Register">
-              <span class="text-white text-sm">Registro</span>
-            </ion-button>
-          </template>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
-
-    <!-- CONTENIDO -->
-    <ion-content fullscreen class="ion-padding bg-gray-50 text-gray-900">
-      <div v-if="isLoading" class="ion-text-center">
-        <ion-spinner name="crescent" />
-      </div>
-
-      <div v-else-if="errorMessage">
-        <p>{{ errorMessage }}</p>
-      </div>
-
-      <div v-else>
-        <h2 class="text-2xl font-bold mb-4">Descubreix Teatres</h2>
-
-        <ion-grid>
-          <template v-for="(chunk, rowIndex) in movieChunks" :key="rowIndex">
-            <ion-row>
-              <ion-col
-                v-for="(movie, movieIndex) in chunk"
-                :key="movieIndex"
-                size="4"
-              >
-                <ion-card class="rounded-lg overflow-hidden shadow-md" @click="goToPlayInfo(movie)">
-  <img :src="movie.page" :alt="movie.title" class="movie-image" />
-  <ion-card-header>
-    <ion-card-title class="text-sm font-bold">
-      {{ movie.title }}
-    </ion-card-title>
-    <ion-card-subtitle class="text-xs text-gray-600">
-      {{ movie.year }}
-    </ion-card-subtitle>
-  </ion-card-header>
-</ion-card>
-              </ion-col>
-            </ion-row>
-          </template>
-        </ion-grid>
-
-        <!-- PAGINACIÓN -->
-        <ion-footer class="ion-no-border">
-          <ion-toolbar color="dark">
-            <ion-buttons slot="start">
-              <ion-button :disabled="currentPage === 1" @click="goToPreviousPage">
-                Anterior
-              </ion-button>
-            </ion-buttons>
-
-            <ion-title>{{ currentPage }} / {{ totalPages }}</ion-title>
-
-            <ion-buttons slot="end">
-              <ion-button :disabled="currentPage === totalPages" @click="goToNextPage">
-                Seguent
-              </ion-button>
-            </ion-buttons>
-          </ion-toolbar>
-        </ion-footer>
-      </div>
-    </ion-content>
-  </ion-page>
-</template>
-
 <style scoped>
 .movie-image {
   width: 100%;
-  height: 500px;
+  height: auto;
   object-fit: cover;
 }
 
@@ -258,5 +258,54 @@ const goToNextPage = () => {
   width: 100%;
   margin-left: auto;
   margin-right: 1rem;
+}
+
+.searchbar-centered {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.toolbar-layout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-wrap: wrap;
+}
+
+.toolbar-layout > * {
+  margin: 4px 0;
+}
+
+.searchbar-container {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.buttons-right {
+  display: flex;
+  align-items: center;
+}
+
+.buttons-right ion-button {
+  margin-left: 4px;
+}
+
+.title-aligned {
+  flex-grow: 0;
+}
+
+/* Ajusta la mida de la imatge en pantalles més petites */
+@media (max-width: 600px) {
+  .movie-image {
+    height: 300px;
+  }
+}
+
+@media (max-width: 400px) {
+  .movie-image {
+    height: 200px;
+  }
 }
 </style>
