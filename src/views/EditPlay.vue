@@ -18,12 +18,12 @@
       <div v-else-if="play">
         <form @submit.prevent="submitForm">
           <ion-item class="mb-4 rounded-lg bg-white shadow-md">
-            <ion-label position="floating">Títol</ion-label>
+            <ion-label position="stacked" class="label-grande">Títol</ion-label>
             <ion-input v-model="formData.title" type="text" required :value="play.title"></ion-input>
           </ion-item>
 
           <ion-item class="mb-4 rounded-lg bg-white shadow-md">
-            <ion-label position="stacked">Portada</ion-label>
+            <ion-label position="stacked" class="label-grande">Portada</ion-label>
             <input type="file" accept="image/*" @change="handleFileChange" class="w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary-500">
             <div v-if="coverPreview || play.page" class="mt-2">
               <img v-if="coverPreview" :src="coverPreview" alt="Vista prèvia de la portada" class="max-w-full h-auto rounded-md shadow-sm">
@@ -32,22 +32,22 @@
           </ion-item>
 
           <ion-item class="mb-4 rounded-lg bg-white shadow-md">
-            <ion-label position="floating">Creador/Autoria</ion-label>
+            <ion-label position="stacked" class="label-grande">Creador/Autoria</ion-label>
             <ion-input v-model="formData.creator" type="text" :value="play.creator"></ion-input>
           </ion-item>
 
           <ion-item class="mb-4 rounded-lg bg-white shadow-md">
-            <ion-label position="floating">Personatges (separats per comes)</ion-label>
+            <ion-label position="stacked" class="label-grande">Personatges (separats per comes)</ion-label>
             <ion-textarea v-model="formData.characters" :value="play.characters"></ion-textarea>
           </ion-item>
 
           <ion-item class="mb-4 rounded-lg bg-white shadow-md">
-            <ion-label position="floating">Any de Creació</ion-label>
+            <ion-label position="stacked" class="label-grande">Any de Creació</ion-label>
             <ion-input v-model="formData.year" type="number" :value="play.year"></ion-input>
           </ion-item>
 
           <ion-item class="mb-6 rounded-lg bg-white shadow-md">
-            <ion-label position="floating">Descripció</ion-label>
+            <ion-label position="stacked" class="label-grande">Descripció</ion-label>
             <ion-textarea v-model="formData.description" :value="play.description"></ion-textarea>
           </ion-item>
 
@@ -214,5 +214,11 @@ ion-textarea {
   --padding-top: 8px;
   --padding-bottom: 8px;
   color: var(--ion-color-dark);
+}
+
+/* Estil per fer la lletra de la label més gran */
+.label-grande {
+  font-size: 1.2em; /* Ajusta la mida segons vulguis */
+  font-weight: bold; /* Opcional: posar en negreta */
 }
 </style>
