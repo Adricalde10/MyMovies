@@ -3,16 +3,16 @@
     <ion-content fullscreen class="ion-padding bg-light text-dark">
       <div class="container mt-5">
         <div class="card shadow p-4 mx-auto" style="max-width: 500px;">
-          <h2 class="text-center text-success mb-4">Inicia Sesión</h2>
+          <h2 class="text-center text-success mb-4">Iniciar Sessió</h2>
 
           <!-- Correo -->
           <div class="mb-3">
-            <label class="form-label">Correo Electrónico</label>
+            <label class="form-label">Correu Electronic</label>
             <input
               v-model="formData.email"
               type="email"
               class="form-control"
-              placeholder="ejemplo@correo.com"
+              placeholder="exemple@correu.com"
               required
             />
             <div class="text-danger small" v-if="errors.email">{{ errors.email }}</div>
@@ -20,7 +20,7 @@
 
           <!-- Contraseña -->
           <div class="mb-3">
-            <label class="form-label">Contraseña</label>
+            <label class="form-label">Contrasenya</label>
             <input
               v-model="formData.password"
               type="password"
@@ -33,13 +33,13 @@
 
           <!-- Botón -->
           <button class="btn btn-success w-100" @click="handleSubmit">
-            Iniciar Sesión
+            Iniciar Sessió
           </button>
 
           <!-- Reenvío de correo de verificación -->
           <div v-if="showResendEmail" class="mt-3">
             <button class="btn btn-secondary w-100" @click="resendVerificationEmail">
-              Reenviar Correo de Verificación
+              Reenviar Correu de Verificació
             </button>
           </div>
         </div>
