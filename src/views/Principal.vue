@@ -1,24 +1,48 @@
 <template>
-  <ion-page>
+  <!-- Menú lateral para móviles -->
+  <ion-menu content-id="main-content" side="start" menu-id="main-menu">
+    <ion-header>
+      <ion-toolbar color="dark">
+        <ion-title>Menú</ion-title>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content>
+      <ion-list>
+        <ion-item v-if="realUserId" :router-link="`/InfoFavourites?userId=${realUserId}`">Favorits</ion-item>
+        <ion-item v-if="realUserId && isAdmin" :router-link="`/ManageContent?userId=${realUserId}`">Gestionar Continguts</ion-item>
+        <ion-item v-if="realUserId" :router-link="`/infoUser?userId=${realUserId}`">Perfil</ion-item>
+        <ion-item v-if="!realUserId" router-link="/login">Iniciar Sessió</ion-item>
+        <ion-item v-if="!realUserId" router-link="/Register">Registre</ion-item>
+      </ion-list>
+    </ion-content>
+  </ion-menu>
+
+  <ion-page id="main-content">
     <ion-header translucent>
       <ion-toolbar color="dark" class="toolbar-layout">
+        <!-- Menú hamburguesa solo visible en móviles -->
+        <ion-buttons slot="start" class="menu-button-mobile">
+          <ion-menu-button />
+        </ion-buttons>
+
         <ion-title class="title-aligned flex items-center space-x-2 text-green-400">
-          <ion-icon :icon="filmOutline" class="w-5 h-5"></ion-icon>
+          <ion-icon :icon="filmOutline" class="icon-film"></ion-icon>
           <span>Butaca1</span>
         </ion-title>
 
-        <ion-buttons slot="end" class="buttons-right">
-          <template v-if="userId">
-            <ion-button :href="`/InfoFavourites?userId=${userId}`" size="small">
+        <!-- Botones visibles solo en pantallas medianas y grandes -->
+        <ion-buttons slot="end" class="buttons-desktop buttons-right">
+          <template v-if="realUserId">
+            <ion-button :href="`/InfoFavourites?userId=${realUserId}`" size="small">
               <span class="text-white text-sm">Favorits</span>
             </ion-button>
-            <ion-button v-if="isAdmin" :href="`/ManageContent?userId=${userId}`" size="small">
+            <ion-button v-if="isAdmin" :href="`/ManageContent?userId=${realUserId}`" size="small">
               <span class="text-white text-sm">Gestionar continguts</span>
             </ion-button>
           </template>
           <template v-else>
             <ion-button href="/login" size="small">
-              <span class="text-white text-sm">Iniciar Sessió </span>
+              <span class="text-white text-sm">Iniciar Sessió</span>
             </ion-button>
             <ion-button href="/Register" size="small">
               <span class="text-white text-sm">Registre</span>
@@ -36,8 +60,9 @@
           />
         </div>
 
-        <ion-buttons slot="end" v-if="userId">
-          <ion-button :href="`/infoUser?userId=${userId}`" size="small">
+        <!-- Icono de usuario SIEMPRE visible solo si realUserId existe -->
+        <ion-buttons slot="end" class="user-icon-button" v-if="realUserId">
+          <ion-button :href="`/infoUser?userId=${realUserId}`" size="small">
             <ion-icon :icon="personOutline" />
           </ion-button>
         </ion-buttons>
@@ -54,7 +79,7 @@
       </div>
 
       <div v-else>
-        <h2 class="text-2xl font-bold mb-4">Descobreix Teatres</h2>
+        <h2 class="title-section">Descobreix Teatres</h2>
 
         <ion-grid>
           <ion-row>
@@ -65,36 +90,32 @@
               :size-sm="6"
               :size-md="4"
             >
-              <ion-card class="rounded-lg overflow-hidden shadow-md" @click="goToPlayInfo(movie)">
+              <ion-card class="movie-card" @click="goToPlayInfo(movie)">
                 <img :src="movie.page" :alt="movie.title" class="movie-image" />
                 <ion-card-header>
-                  <ion-card-title class="text-sm font-bold">{{ movie.title }}</ion-card-title>
-                  <ion-card-subtitle class="text-xs text-gray-600">{{ movie.year }}</ion-card-subtitle>
+                  <ion-card-title class="movie-title">{{ movie.title }}</ion-card-title>
+                  <ion-card-subtitle class="movie-subtitle">{{ movie.year }}</ion-card-subtitle>
                 </ion-card-header>
               </ion-card>
             </ion-col>
           </ion-row>
         </ion-grid>
-
-        <ion-footer class="ion-no-border">
-          <ion-toolbar color="dark">
-            <ion-buttons slot="start">
-              <ion-button :disabled="currentPage === 1" @click="goToPreviousPage">
-                Anterior
-              </ion-button>
-            </ion-buttons>
-
-            <ion-title>{{ currentPage }} / {{ totalPages }}</ion-title>
-
-            <ion-buttons slot="end">
-              <ion-button :disabled="currentPage === totalPages" @click="goToNextPage">
-                Seguent
-              </ion-button>
-            </ion-buttons>
-          </ion-toolbar>
-        </ion-footer>
       </div>
     </ion-content>
+
+    <ion-footer class="ion-no-border">
+      <ion-toolbar color="dark">
+        <ion-buttons slot="start">
+          <ion-button :disabled="currentPage === 1" @click="goToPreviousPage">Anterior</ion-button>
+        </ion-buttons>
+
+        <ion-title>{{ currentPage }} / {{ totalPages }}</ion-title>
+
+        <ion-buttons slot="end">
+          <ion-button :disabled="currentPage === totalPages" @click="goToNextPage">Seguent</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-footer>
   </ion-page>
 </template>
 
@@ -117,7 +138,11 @@ import {
   IonButton,
   IonButtons,
   IonFooter,
-  IonSpinner
+  IonSpinner,
+  IonMenu,
+  IonMenuButton,
+  IonList,
+  IonItem,
 } from '@ionic/vue';
 
 import { filmOutline, personOutline } from 'ionicons/icons';
@@ -125,65 +150,55 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import supabase from '@/supabaseClient';
 
-// Usuario desde query
 const route = useRoute();
-const userId = route.query.userId as string | undefined;
-
 const router = useRouter();
 
-//const { dataCurrentUSer: { user } } = await supabase.auth.getUser();
+const rawUserId = route.query.userId as string | undefined;
+const realUserId = ref<string | null>(
+  rawUserId && rawUserId !== 'null' && rawUserId !== 'undefined' ? rawUserId : null
+);
 
-// Buscador
 const searchText = ref('');
-
-// Estado
 const plays = ref<any[]>([]);
 const isLoading = ref(true);
 const errorMessage = ref('');
-
-// Estado admin
 const isAdmin = ref(false);
 
 const goToPlayInfo = (movie: any) => {
   router.push({
     path: '/infoPlay',
-    query: { id: movie.id_play, userId: userId }, // Passa l'ID de l'obra com a query parameter
+    query: { id: movie.id_play, userId: realUserId.value },
   });
 };
-// Carga datos usuario para saber si es admin
+
 const loadUserData = async () => {
-  if (!userId) return;
+  if (!realUserId.value) {
+    isAdmin.value = false;
+    return;
+  }
   try {
     const { data, error } = await supabase
       .from('usuarios')
       .select('is_admin')
-      .eq('user_id', userId)
+      .eq('user_id', realUserId.value)
       .single();
 
     if (error) throw error;
-
-    if (data) {
-      isAdmin.value = data.is_admin || false;
-    }
+    if (data) isAdmin.value = data.is_admin || false;
   } catch (error) {
     console.error('Error al cargar datos usuario:', error);
+    isAdmin.value = false;
   }
 };
 
-// Carga de datos desde Supabase
 const loadPlays = async () => {
   try {
-    const { data, error } = await supabase
-      .from('play')
-      .select('*')
-      .order('id_play', { ascending: true });
+    const { data, error } = await supabase.from('play').select('*').order('id_play', { ascending: true });
 
     if (error) throw error;
-
+    plays.value = data || [];
     if (!data || data.length === 0) {
       errorMessage.value = 'La tabla está vacía o no tienes permiso de lectura.';
-    } else {
-      plays.value = data;
     }
   } catch (error: any) {
     errorMessage.value = 'No se pudo cargar las obras.';
@@ -197,7 +212,6 @@ onMounted(async () => {
   await loadPlays();
 });
 
-// Búsqueda
 const filteredMovies = computed(() => {
   const query = searchText.value.toLowerCase();
   return plays.value.filter((movie) => {
@@ -209,17 +223,12 @@ const filteredMovies = computed(() => {
   });
 });
 
-// Paginación
 const currentPage = ref(1);
 const moviesPerPage = computed(() => {
   const width = window.innerWidth;
-  if (width < 600) {
-    return 1; // 1 columna en pantalles molt petites
-  } else if (width < 960) {
-    return 2; // 2 columnes en pantalles petites
-  } else {
-    return 6; // 3 columnes en pantalles mitjanes i grans
-  }
+  if (width < 600) return 3;
+  else if (width < 960) return 2;
+  return 6;
 });
 const totalPages = computed(() => Math.ceil(filteredMovies.value.length / moviesPerPage.value));
 
@@ -227,14 +236,6 @@ const currentMovies = computed(() => {
   const start = (currentPage.value - 1) * moviesPerPage.value;
   const end = start + moviesPerPage.value;
   return filteredMovies.value.slice(start, end);
-});
-
-const movieChunks = computed(() => {
-  const chunks = [];
-  for (let i = 0; i < currentMovies.value.length; i += moviesPerPage.value) {
-    chunks.push(currentMovies.value.slice(i, i + moviesPerPage.value));
-  }
-  return chunks;
 });
 
 const goToPreviousPage = () => {
@@ -247,24 +248,7 @@ const goToNextPage = () => {
 </script>
 
 <style scoped>
-.movie-image {
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-}
-
-.searchbar-small {
-  max-width: 500px;
-  width: 100%;
-  margin-left: auto;
-  margin-right: 1rem;
-}
-
-.searchbar-centered {
-  max-width: 100%;
-  margin: 0 auto;
-}
-
+/* Layout toolbar */
 .toolbar-layout {
   display: flex;
   align-items: center;
@@ -283,6 +267,7 @@ const goToNextPage = () => {
   justify-content: center;
 }
 
+/* Botones y menú */
 .buttons-right {
   display: flex;
   align-items: center;
@@ -296,7 +281,68 @@ const goToNextPage = () => {
   flex-grow: 0;
 }
 
-/* Ajusta la mida de la imatge en pantalles més petites */
+/* Icono película tamaño */
+.icon-film {
+  width: 20px;
+  height: 20px;
+  margin-right: 6px;
+}
+
+/* Menú hamburguesa (solo móvil) */
+.menu-button-mobile {
+  display: flex;
+  align-items: center;
+}
+
+/* Botones escritorio (ocultos por defecto) */
+.buttons-desktop {
+  display: none;
+  align-items: center;
+}
+
+/* Media query para pantallas >= 768px */
+@media (min-width: 768px) {
+  .buttons-desktop {
+    display: flex;
+  }
+  .menu-button-mobile {
+    display: none;
+  }
+}
+
+/* Estilos para imágenes y cards */
+
+.movie-image {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.movie-card {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+.movie-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.movie-subtitle {
+  font-size: 0.75rem;
+  color: #4a5568; /* gris oscuro */
+}
+
+.title-section {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+/* Responsive images height */
+
 @media (max-width: 600px) {
   .movie-image {
     height: 300px;
@@ -307,5 +353,56 @@ const goToNextPage = () => {
   .movie-image {
     height: 200px;
   }
+}
+
+/* Opciones colores personalizados para ion-content (puedes ajustar o eliminar) */
+.bg-gray-50 {
+  background-color: #f9fafb;
+}
+
+.text-gray-900 {
+  color: #111827;
+}
+
+/* Texto blanco en botones */
+.text-white {
+  color: white;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+}
+
+/* Icono usuario visible siempre si hay sesión */
+.user-icon-button {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.user-icon-button ion-icon {
+  width: 24px;
+  height: 24px;
+  color: white;
+}
+
+/* Ajuste tamaño icono en escritorio */
+@media (min-width: 768px) {
+  .user-icon-button ion-icon {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Para que el footer esté pegado al fondo */
+#main-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+ion-content {
+  flex-grow: 1;
+  --padding-top: 0;
 }
 </style>
