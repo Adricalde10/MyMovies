@@ -7,7 +7,7 @@
 
           <!-- Correo -->
           <div class="mb-3">
-            <label class="form-label">Correu Electronic</label>
+            <label class="form-label">Correu Electrònic</label>
             <input
               v-model="formData.email"
               type="email"
