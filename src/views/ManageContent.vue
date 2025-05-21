@@ -12,7 +12,7 @@ import {
   IonIcon,
   IonButtons
 } from '@ionic/vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted,onUpdated } from 'vue';
 import { trashOutline, createOutline, addOutline, personOutline } from 'ionicons/icons';
 import supabase from '@/supabaseClient'
 import { useRoute,useRouter } from 'vue-router';
@@ -66,6 +66,10 @@ const goToCreatePlay = () => {
 onMounted(() => {
   loadPlays();
 });
+
+/* onUpdated(() => {
+  loadPlays();
+}); */
 </script>
 
 <template>
