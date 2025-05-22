@@ -1,6 +1,6 @@
-import { createRouter, createWebHistory } from '@ionic/vue-router';
+import { createRouter, createWebHashHistory } from '@ionic/vue-router'; // <-- CAMBIO AQUÍ
 import { RouteRecordRaw } from 'vue-router';
-import TabsPage from '../views/TabsPage.vue'
+import TabsPage from '../views/TabsPage.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -31,6 +31,11 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/InfoUser.vue')
       },
       {
+        path: '/editplay',
+        name: 'editplay',
+        component: () => import('@/views/EditPlay.vue')
+      },
+      {
         path: '/infoFavourites',
         name: 'infoFavourites',
         component: () => import('@/views/InfoFavourites.vue')
@@ -41,33 +46,33 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/CreatePlay.vue')
       },
       {
-        path: '/manageContent',
-        name: 'manageContent',
-        component: () => import('@/views/ManageContent.vue')
-      },
-      {
-        path: '/editPlay',
-        name: 'editPlay',
-        component: () => import('@/views/EditPlay.vue')
-      },
-      {
         path: '/register',
         name: 'Register',
-        component: () => import('@/views/Register.vue') // Verifica que esta ruta sea correcta
+        component: () => import('@/views/Register.vue')
       },
       {
         path: '/login',
         name: 'Login',
-        component: () => import('@/views/login.vue') // Verifica que esta ruta sea correcta
-      }
+        component: () => import('@/views/Login.vue')
+      },
+      {
+        path: '/MoviesPage',
+        name: 'MoviesPage',
+        component: () => import('@/views/MoviesPage.vue')
+      },
+      {
+        path: '/ManageContent',
+        name: 'ManageContent',
+        component: () => import('@/views/ManageContent.vue')
+      },
     ]
   }
-]
+];
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(), // <-- USAR HASH MODE PARA ANDROID
   routes
-})
+});
 
-export default router
-
+export default router;
+  
