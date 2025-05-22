@@ -1,26 +1,29 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import supabase from '@/supabaseClient';
+import { ref, onMounted } from 'vue'; // Importem funcions de Vue per reactivitat i cicle de vida
+import { useRouter, useRoute } from 'vue-router'; // Per obtenir la ruta actual i navegar entre pàgines
+import supabase from '@/supabaseClient'; // Importem el client de Supabase
 
-const route = useRoute();
-const router = useRouter();
+const route = useRoute(); // Accedim a la ruta actual
+const router = useRouter(); // Obtenim l'objecte per navegar entre rutes
 
-const userId = route.query.userId as string;
+const userId = route.query.userId as string; // Obtenim el userId de la query string
 
+// Variables reactives per desar la informació de l'usuari
 const userName = ref('');
 const userEmail = ref('');
 const newPassword = ref('');
 const profilePictureUrl = ref<string | null>(null);
 const loading = ref(true);
 const errorMessage = ref('');
-const fileInput = ref<HTMLInputElement | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null); // Referència al camp input de fitxer
 
+// Funció per carregar les dades de l'usuari des de Supabase
 const loadUserData = async () => {
   loading.value = true;
   errorMessage.value = '';
 
   try {
+    // Consultem la taula 'usuarios' per l'usuari amb l'user_id concret
     const { data, error } = await supabase
       .from('usuarios')
       .select('*')
@@ -30,6 +33,7 @@ const loadUserData = async () => {
     if (error) throw error;
 
     if (data) {
+      // Assignem les dades obtingudes a les variables reactives
       userName.value = data.name || '';
       userEmail.value = data.email || '';
       profilePictureUrl.value = data.photo || null;
@@ -43,25 +47,29 @@ const loadUserData = async () => {
   }
 };
 
+// Carreguem les dades quan es munta el component
 onMounted(loadUserData);
 
+// Funció per guardar els canvis realitzats a l'usuari
 const saveChanges = async () => {
   loading.value = true;
   errorMessage.value = '';
 
   try {
-    // Opcional: actualizar email en Auth
+    // Actualitzem l'email també a l'autenticació de Supabase
     const { error: authError } = await supabase.auth.updateUser({
       email: userEmail.value,
     });
     if (authError) throw authError;
 
+    // Preparem l'objecte amb les dades a actualitzar
     const updates = {
       name: userName.value,
       email: userEmail.value,
       photo: profilePictureUrl.value,
     };
 
+    // Actualitzem la taula 'usuarios'
     const { error: dbError } = await supabase
       .from('usuarios')
       .update(updates)
@@ -79,10 +87,12 @@ const saveChanges = async () => {
   }
 };
 
+// Funció per simular el clic sobre el camp de fitxer
 function triggerFileInput() {
   fileInput.value?.click();
 }
 
+// Funció que es dispara quan l'usuari selecciona un fitxer
 const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
@@ -92,17 +102,17 @@ const handleFileChange = async (event: Event) => {
   errorMessage.value = '';
 
   try {
-    const fileExt = file.name.split('.').pop();
-    const filePath = `butaca1/${userId}-${Date.now()}.${fileExt}`;
+    const fileExt = file.name.split('.').pop(); // Extensió del fitxer
+    const filePath = `butaca1/${userId}-${Date.now()}.${fileExt}`; // Ruta al bucket
 
-    // 1. Subir archivo al bucket 'butaca1'
+    // 1. Pugem el fitxer al bucket de Supabase
     const { error: uploadError } = await supabase.storage
       .from('butaca1')
       .upload(filePath, file, { upsert: true });
 
     if (uploadError) throw uploadError;
 
-    // 2. Obtener URL pública después de confirmar la subida
+    // 2. Obtenim la URL pública del fitxer
     const { data } = supabase.storage
       .from('butaca1')
       .getPublicUrl(filePath);
@@ -110,7 +120,7 @@ const handleFileChange = async (event: Event) => {
     const publicUrl = data.publicUrl;
     if (!publicUrl) throw new Error('No se pudo obtener la URL pública');
 
-    // 3. Actualizar la columna 'photo' en la tabla 'usuarios'
+    // 3. Actualitzem la URL de la foto a la base de dades
     const { error: dbError } = await supabase
       .from('usuarios')
       .update({ photo: publicUrl })
@@ -118,7 +128,7 @@ const handleFileChange = async (event: Event) => {
 
     if (dbError) throw dbError;
 
-    // 4. Actualizar variable local para mostrar la nueva foto
+    // 4. Assignem la nova URL a la variable reactiva
     profilePictureUrl.value = publicUrl;
     alert('Foto de perfil actualizada!');
   } catch (error: any) {
@@ -126,23 +136,27 @@ const handleFileChange = async (event: Event) => {
     alert(errorMessage.value);
   } finally {
     loading.value = false;
-    if (fileInput.value) fileInput.value.value = '';
+    if (fileInput.value) fileInput.value.value = ''; // Netegem l'input
   }
 };
 
+// Funció placeholder per eliminar el compte
 function deleteAccount() {
   alert("Cuenta eliminada.");
 }
 
+// Funció per tancar sessió
 function logout() {
   alert("Sesión cerrada.");
   router.push('/Principal');
 }
 
+// Funció per tancar la pantalla d'informació de l'usuari
 function closeInfoUser() {
   router.push(`/Principal?userId=${userId}`);
 }
 </script>
+
 
 <template>
   <div class="container py-5 position-relative" style="max-width: 480px;">
