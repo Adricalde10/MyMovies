@@ -3,10 +3,9 @@
     <ion-header>
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-back-button default-href="/"></ion-back-button>
+          <ion-back-button default-href="/"> </ion-back-button>
         </ion-buttons>
-        <ion-title>Editar obra</ion-title>
-      </ion-toolbar>
+        <ion-title>Editar obra</ion-title> </ion-toolbar>
     </ion-header>
     <ion-content class="ion-padding bg-gray-100">
       <div v-if="isLoading" class="ion-text-center">
@@ -62,49 +61,49 @@
 </template>
 
 <script setup lang="ts">
-import { IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent, IonItem, IonLabel, IonInput, IonButton, IonTextarea, IonSpinner } from '@ionic/vue';
-import { ref, onMounted, watch } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import supabase from '@/supabaseClient';
+import { IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent, IonItem, IonLabel, IonInput, IonButton, IonTextarea, IonSpinner } from '@ionic/vue'; // Importa els components d'Ionic necessaris
+import { ref, onMounted, watch } from 'vue'; // Importa 'ref' per a variables reactives, 'onMounted' per a accions al muntar i 'watch' per observar canvis
+import { useRouter, useRoute } from 'vue-router'; // Importa 'useRouter' per la navegació i 'useRoute' per accedir a la ruta actual
+import supabase from '@/supabaseClient'; // Importa la instància configurada de Supabase
 
-const route = useRoute();
-const router = useRouter();
-const playId = ref(route.query.id as string | undefined);
-const play = ref<any>(null);
-const userId = route.query.userId as string | undefined;
+const route = useRoute(); // Obté l'objecte de la ruta actual
+const router = useRouter(); // Obté l'objecte del router per a la navegació
+const playId = ref(route.query.id as string | undefined); // Obté l'ID de l'obra de la query, tipat com a string o undefined, i el fa reactiu
+const play = ref<any>(null); // Defineix una variable reactiva per emmagatzemar les dades de l'obra a editar, inicialment null i de tipus 'any'
+const userId = route.query.userId as string | undefined; // Obté l'ID de l'usuari de la query, tipat com a string o undefined
 
-const formData = ref({
+const formData = ref({ // Defineix un objecte reactiu per emmagatzemar les dades del formulari d'edició
   title: '',
-  coverFile: null as File | null,
+  coverFile: null as File | null, // Permet un objecte File o null per al nou fitxer de portada
   creator: '',
   characters: '',
-  year: null as number | null,
+  year: null as number | null, // Permet un número o null per l'any
   description: '',
 });
-const isLoading = ref(false);
-const errorMessage = ref<string | null>(null);
-const coverPreview = ref<string | null>(null);
+const isLoading = ref(false); // Variable reactiva per controlar si s'està carregant o guardant dades
+const errorMessage = ref<string | null>(null); // Variable reactiva per emmagatzemar missatges d'error
+const coverPreview = ref<string | null>(null); // Variable reactiva per emmagatzemar la URL de la previsualització de la nova portada
 
-const loadPlay = async () => {
-  isLoading.value = true;
-  errorMessage.value = null;
-  if (!playId.value) {
+const loadPlay = async () => { // Funció asíncrona per carregar les dades de l'obra a editar
+  isLoading.value = true; // Indica que la càrrega està en curs
+  errorMessage.value = null; // Reinicia qualsevol missatge d'error anterior
+  if (!playId.value) { // Si no s'ha proporcionat un ID de l'obra
     errorMessage.value = 'No s\'ha proporcionat l\'ID de l\'obra.';
     isLoading.value = false;
     return;
   }
   try {
     const { data, error } = await supabase
-      .from('play')
-      .select('*')
-      .eq('id', playId.value)
-      .single();
+      .from('play') // Consulta la taula 'play'
+      .select('*') // Selecciona totes les columnes
+      .eq('id', playId.value) // Filtra per l'ID de l'obra
+      .single(); // Espera un únic resultat
 
-    if (error) throw error;
+    if (error) throw error; // Si hi ha un error en la consulta, el llança
 
-    if (data) {
-      play.value = data;
-      // Inicializa formData con los datos de la obra cargada
+    if (data) { // Si s'han trobat dades de l'obra
+      play.value = data; // Assigna les dades a la variable reactiva 'play'
+      // Inicialitza formData amb los datos de la obra cargada
       formData.value.title = data.title;
       formData.value.creator = data.creator;
       formData.value.characters = data.characters;
@@ -114,36 +113,36 @@ const loadPlay = async () => {
       if (data.page) {
         coverPreview.value = null; // Aseguramos que no se muestre la previsualización del nuevo archivo
       }
-    } else {
+    } else { // Si no s'ha trobat l'obra amb l'ID proporcionat
       errorMessage.value = 'No s\'ha trobat l\'obra.';
     }
-  } catch (error: any) {
+  } catch (error: any) { // Captura qualsevol error durant la càrrega
     errorMessage.value = 'No s\'ha pogut carregar la informació de l\'obra.';
   } finally {
-    isLoading.value = false;
+    isLoading.value = false; // Indica que la càrrega ha finalitzat
     console.debug('Datos de la obra cargados:', play.value);
   }
 };
 
-onMounted(loadPlay);
+onMounted(loadPlay); // Crida la funció 'loadPlay' quan el component es munta
 
-const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  if (target.files && target.files.length > 0) {
-    formData.value.coverFile = target.files[0];
-    coverPreview.value = URL.createObjectURL(target.files[0]);
-  } else {
-    formData.value.coverFile = null;
-    coverPreview.value = null;
+const handleFileChange = (event: Event) => { // Funció que es crida quan l'usuari selecciona un nou fitxer de portada
+  const target = event.target as HTMLInputElement; // Casteja l'event target a un input de tipus fitxer
+  if (target.files && target.files.length > 0) { // Si s'ha seleccionat almenys un fitxer
+    formData.value.coverFile = target.files[0]; // Assigna el primer fitxer a 'formData.coverFile'
+    coverPreview.value = URL.createObjectURL(target.files[0]); // Crea una URL local per previsualitzar la nova imatge
+  } else { // Si no s'ha seleccionat cap fitxer
+    formData.value.coverFile = null; // Neteja el fitxer de portada en 'formData'
+    coverPreview.value = null; // Neteja la URL de la previsualització
   }
 };
 
-const submitForm = async () => {
-  isLoading.value = true;
-  errorMessage.value = null;
+const submitForm = async () => { // Funció asíncrona per enviar el formulari d'edició
+  isLoading.value = true; // Indica que la guardada està en curs
+  errorMessage.value = null; // Reinicia qualsevol missatge d'error anterior
 
   try {
-    const updates: any = {
+    const updates: any = { // Defineix un objecte per contenir els camps a actualitzar
       title: formData.value.title,
       creator: formData.value.creator,
       characters: formData.value.characters,
@@ -151,50 +150,50 @@ const submitForm = async () => {
       description: formData.value.description,
     };
 
-    if (formData.value.coverFile) {
+    if (formData.value.coverFile) { // Si s'ha seleccionat un nou fitxer de portada
       // Subir la nueva imagen
       const file = formData.value.coverFile;
-      const filePath = `covers/${Date.now()}-${file.name}`;
+      const filePath = `covers/${Date.now()}-${file.name}`; // Genera una nova ruta de fitxer única
       const { error: uploadError } = await supabase.storage
-        .from('butaca1') // Reemplaza 'your_bucket_name' con el nombre de tu bucket de almacenamiento
-        .upload(filePath, file, {
+        .from('butaca1') // Especifica el bucket de Supabase Storage
+        .upload(filePath, file, { // Puja el nou fitxer
           cacheControl: '3600',
           upsert: false,
         });
 
-      if (uploadError) {
+      if (uploadError) { // Si hi ha un error en la pujada
         throw new Error(`Error al subir la portada: ${uploadError.message}`);
       }
 
       const { data: publicUrl } = supabase.storage
-        .from('butaca1') // Reemplaza 'your_bucket_name' con el nombre de tu bucket de almacenamiento
-        .getPublicUrl(filePath);
+        .from('butaca1') // Especifica el bucket de Supabase Storage
+        .getPublicUrl(filePath); // Obté la URL pública del nou fitxer pujat
 
-      updates.page = publicUrl.publicUrl;
+      updates.page = publicUrl.publicUrl; // Assigna la nova URL de la portada a l'objecte d'actualitzacions
     }
 
-    // Actualizar la base de datos
+    // Actualitzar la base de datos
     const { error: updateError } = await supabase
-      .from('play')
-      .update(updates)
-      .eq('id', playId.value);
+      .from('play') // Consulta la taula 'play'
+      .update(updates) // Actualitza les columnes amb els valors de 'updates'
+      .eq('id', playId.value); // Filtra per l'ID de l'obra a editar
 
-    if (updateError) {
+    if (updateError) { // Si hi ha un error en l'actualització de la base de dades
       throw new Error(`Error al actualizar la obra: ${updateError.message}`);
     }
 
     console.log('Obra actualizada correctamente');
-    router.push({
+    router.push({ // Redirigeix a la pàgina de gestió de contingut
       path: '/ManageContent',
       query: {
         userId: userId,
       },
     });
-  } catch (error: any) {
+  } catch (error: any) { // Captura qualsevol error durant el procés de guardat
     errorMessage.value = error.message;
     console.error('Error al guardar los cambios:', error);
   } finally {
-    isLoading.value = false;
+    isLoading.value = false; // Indica que la guardada ha finalitzat
   }
 };
 </script>
