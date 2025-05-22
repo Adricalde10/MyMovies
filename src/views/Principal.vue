@@ -20,7 +20,6 @@
   <ion-page id="main-content">
     <ion-header translucent>
       <ion-toolbar color="dark" class="toolbar-layout">
-        <!-- Menú hamburguesa solo visible en móviles -->
         <ion-buttons slot="start" class="menu-button-mobile">
           <ion-menu-button />
         </ion-buttons>
@@ -30,7 +29,6 @@
           <span>Butaca1</span>
         </ion-title>
 
-        <!-- Botones visibles solo en pantallas medianas y grandes -->
         <ion-buttons slot="end" class="buttons-desktop buttons-right">
           <template v-if="realUserId">
             <ion-button :href="`/InfoFavourites?userId=${realUserId}`" size="small">
@@ -60,7 +58,6 @@
           />
         </div>
 
-        <!-- Icono de usuario SIEMPRE visible solo si realUserId existe -->
         <ion-buttons slot="end" class="user-icon-button" v-if="realUserId">
           <ion-button :href="`/infoUser?userId=${realUserId}`" size="small">
             <ion-icon :icon="personOutline" />
@@ -68,6 +65,8 @@
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
+
+    <div class="ion-safe-area-top"></div>
 
     <ion-content fullscreen class="ion-padding bg-gray-50 text-gray-900">
       <div v-if="isLoading" class="ion-text-center">
@@ -78,7 +77,7 @@
         <p>{{ errorMessage }}</p>
       </div>
 
-      <div v-else>
+      <div v-else class="custom-top-spacing">
         <h2 class="title-section">Descobreix Teatres</h2>
 
         <ion-grid>
@@ -311,7 +310,6 @@ const goToNextPage = () => {
 }
 
 /* Estilos para imágenes y cards */
-
 .movie-image {
   width: 100%;
   height: auto;
@@ -332,7 +330,7 @@ const goToNextPage = () => {
 
 .movie-subtitle {
   font-size: 0.75rem;
-  color: #4a5568; /* gris oscuro */
+  color: #4a5568;
 }
 
 .title-section {
@@ -340,14 +338,17 @@ const goToNextPage = () => {
   font-weight: 700;
   margin-bottom: 1rem;
 }
+.custom-top-spacing {
+  margin-top: 150px; /* Puedes ajustar este valor para más o menos espacio */
+}
 
 /* Responsive images height */
-
 @media (max-width: 600px) {
   .movie-image {
     height: 300px;
   }
 }
+
 
 @media (max-width: 400px) {
   .movie-image {
@@ -355,7 +356,6 @@ const goToNextPage = () => {
   }
 }
 
-/* Opciones colores personalizados para ion-content (puedes ajustar o eliminar) */
 .bg-gray-50 {
   background-color: #f9fafb;
 }
@@ -364,7 +364,6 @@ const goToNextPage = () => {
   color: #111827;
 }
 
-/* Texto blanco en botones */
 .text-white {
   color: white;
 }
@@ -373,7 +372,6 @@ const goToNextPage = () => {
   font-size: 0.875rem;
 }
 
-/* Icono usuario visible siempre si hay sesión */
 .user-icon-button {
   display: flex;
   align-items: center;
@@ -386,7 +384,6 @@ const goToNextPage = () => {
   color: white;
 }
 
-/* Ajuste tamaño icono en escritorio */
 @media (min-width: 768px) {
   .user-icon-button ion-icon {
     width: 28px;
@@ -394,7 +391,7 @@ const goToNextPage = () => {
   }
 }
 
-/* Para que el footer esté pegado al fondo */
+/* Footer fijo al fondo */
 #main-content {
   display: flex;
   flex-direction: column;
