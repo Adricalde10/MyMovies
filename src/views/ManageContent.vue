@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// Importació de components d'Ionic i Vue
 import {
   IonPage,
   IonHeader,
@@ -12,65 +13,80 @@ import {
   IonIcon,
   IonButtons
 } from '@ionic/vue';
+
 import { ref, onMounted,onUpdated } from 'vue';
 import { trashOutline, createOutline, addOutline, personOutline } from 'ionicons/icons';
-import supabase from '@/supabaseClient'
+import supabase from '@/supabaseClient';
 import { useRoute,useRouter } from 'vue-router';
 
-
+// Inicialització del router i ruta per a la navegació
 const router = useRouter();
 const route = useRoute();
 
-// Usuario desde query
+// Obtenir l'identificador de l'usuari des de la query de l'URL
 const userId = route.query.userId as string | undefined;
 
-
+// Estat per controlar si es carreguen dades o hi ha errors
 const isLoading = ref(true);
 const errorMessage = ref('');
+
+// Llista reactiva d'obres
 const plays = ref<{ id: number; title: string; year: string }[]>([]);
-// Carregar obres
+
+// Funció per carregar totes les obres des de la base de dades
 const loadPlays = async () => {
   isLoading.value = true;
+
   const { data, error } = await supabase.from('play').select('*').order('id', { ascending: true });
 
   if (error) {
+    // Mostra un missatge d'error si falla la càrrega
     errorMessage.value = 'No es poden carregar les obres.';
     console.error(error);
   } else {
+    // Assigna les obres recuperades a la variable reactiva
     plays.value = data;
   }
 
   isLoading.value = false;
 };
 
-// Eliminar obra
+// Funció per eliminar una obra per ID
 const deletePlay = async (id: number) => {
   const { error } = await supabase.from('play').delete().eq('id', id);
 
   if (error) {
+    // Mostra un error si no es pot eliminar
     console.error('Error eliminant obra:', error.message);
   } else {
+    // Elimina localment l'obra eliminada
     plays.value = plays.value.filter(play => play.id !== id);
   }
 };
 
-// Navegar
+// Navegació per editar una obra
 const editPlay = (idPlay: number) => {
   router.push({ path: `/EditPlay?userId=${userId}`, query: { id: idPlay.toString() } });
 };
+
+// Navegació per crear una nova obra
 const goToCreatePlay = () => {
   router.push(`/CreatePlay?userId=${userId}`);
 };
 
-// Inicialització
+// Crida la funció per carregar obres quan el component es munta
 onMounted(() => {
   loadPlays();
 });
 
-/* onUpdated(() => {
+/* 
+// Si vols que les obres es recarreguin cada vegada que el component s'actualitza, descomenta això
+onUpdated(() => {
   loadPlays();
-}); */
+});
+*/
 </script>
+
 
 <template>
   <ion-page>
