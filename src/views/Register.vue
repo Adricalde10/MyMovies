@@ -77,10 +77,17 @@
 </template>
 <script setup lang="ts">
 import { ref } from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent, IonItem, IonLabel, IonInput, IonButton, IonTextarea } from '@ionic/vue';
-import supabase from '@/supabaseClient';
+import {
+  IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton,
+  IonTitle, IonContent, IonItem, IonLabel, IonInput, IonButton, IonTextarea
+} from '@ionic/vue';
+
+import supabase from '@/supabaseClient'; // Client Supabase per interactuar amb la BBDD
+
+// Icones usades en el template
 import { filmOutline, personOutline, starOutline } from 'ionicons/icons';
 
+// Model del formulari (reactiu)
 const formData = ref({
   name: '',
   email: '',
@@ -88,6 +95,7 @@ const formData = ref({
   confirmPassword: '',
 });
 
+// Missatges d’error per cada camp
 const errors = ref({
   name: '',
   email: '',
@@ -95,24 +103,27 @@ const errors = ref({
   confirmPassword: '',
 });
 
+// Funció per validar que tots els camps siguin correctes
 const validateForm = () => {
   errors.value = {
     name: formData.value.name ? '' : 'El nom és obligatori.',
-    email: formData.value.email && /\S+@\S+\.\S+/.test(formData.value.email) ? '' : 'Correo electrònic no vàlid.',
+    email: formData.value.email && /\S+@\S+\.\S+/.test(formData.value.email)
+      ? '' : 'Correo electrònic no vàlid.',
     password: formData.value.password ? '' : 'La contrasenya és obligatoria.',
-    confirmPassword:
-      formData.value.confirmPassword === formData.value.password
-        ? ''
-        : 'Les contrasenyes no coincideixen.',
+    confirmPassword: formData.value.confirmPassword === formData.value.password
+      ? '' : 'Les contrasenyes no coincideixen.',
   };
 
+  // Retorna true si no hi ha cap error
   return !Object.values(errors.value).some((e) => e !== '');
 };
 
+// Funció per gestionar el registre de l'usuari
 const handleSubmit = async () => {
-  if (!validateForm()) return;
+  if (!validateForm()) return; // No segueix si hi ha errors
 
   try {
+    // Crea el compte d'usuari amb Supabase
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: formData.value.email,
       password: formData.value.password,
@@ -127,6 +138,7 @@ const handleSubmit = async () => {
       return;
     }
 
+    // Desa informació addicional de l’usuari a la taula `usuarios`
     const { error: dbError } = await supabase.from('usuarios').insert([
       {
         user_id: user.id,
@@ -143,3 +155,4 @@ const handleSubmit = async () => {
   }
 };
 </script>
+
