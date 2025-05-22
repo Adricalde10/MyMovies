@@ -83,101 +83,101 @@ import {
   IonButton,
   IonIcon,
   IonButtons
-} from '@ionic/vue';
-import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { trashOutline, filmOutline, personOutline } from 'ionicons/icons';
-import { supabase } from '../supabaseClient';
+} from '@ionic/vue'; // Importa els components d'Ionic necessaris per a la interfície d'usuari
+import { ref, onMounted } from 'vue'; // Importa 'ref' per a variables reactives i 'onMounted' per a funcions que s'executen quan el component es munta
+import { useRoute, useRouter } from 'vue-router'; // Importa 'useRoute' per accedir a la informació de la ruta actual i 'useRouter' per a la navegació
+import { trashOutline, filmOutline, personOutline } from 'ionicons/icons'; // Importa les icones de Ionicons que s'utilitzaran en la plantilla
+import { supabase } from '../supabaseClient'; // Importa la instància configurada del client de Supabase des del fitxer '../supabaseClient.ts'
 
-interface Play {
-  id_play: number; // Asegúrate que la propiedad sea 'id_play'
+interface Play { // Defineix una interfície per tipar les dades d'una obra
+  id_play: number; // Assegura't que la propietat sigui 'id_play'
   title: string;
   year: string;
-  page?: string | null;
+  page?: string | null; // La portada pot ser una cadena (URL) o null
 }
 
-interface FavouritePlay {
+interface FavouritePlay { // Defineix una interfície per tipar les obres favorites amb la seva informació
   id_play: number;
-  play: Play;
+  play: Play; // Conté les dades de l'obra favorita
 }
 
-const route = useRoute();
-const router = useRouter();
-const userId = route.query.userId as string;
+const route = useRoute(); // Obté l'objecte de la ruta actual
+const router = useRouter(); // Obté l'objecte del router per a la navegació
+const userId = route.query.userId as string; // Obté l'ID de l'usuari dels paràmetres de la query i l'assegura com a string
 
-const isLoading = ref(true);
-const favouritesWithPage = ref<FavouritePlay[]>([]);
-const isAdmin = ref(false);
+const isLoading = ref(true); // Variable reactiva per indicar si les dades estan sent carregades
+const favouritesWithPage = ref<FavouritePlay[]>([]); // Variable reactiva per emmagatzemar la llista d'obres favorites amb la seva informació de portada
+const isAdmin = ref(false); // Variable reactiva per indicar si l'usuari actual és administrador
 
-const loadUserData = async () => {
-  if (!userId) return;
+const loadUserData = async () => { // Funció asíncrona per carregar la informació de l'usuari (si és admin)
+  if (!userId) return; // Si no hi ha un ID d'usuari, no fa res
   try {
     const { data, error } = await supabase
-      .from('usuarios')
-      .select('is_admin')
-      .eq('user_id', userId)
-      .single();
+      .from('usuarios') // Consulta la taula 'usuarios'
+      .select('is_admin') // Selecciona la columna 'is_admin'
+      .eq('user_id', userId) // Filtra per l'ID de l'usuari actual
+      .single(); // Espera un únic resultat
 
-    if (error) throw error;
+    if (error) throw error; // Si hi ha un error en la consulta, el llança
 
-    if (data) {
-      isAdmin.value = data.is_admin || false;
+    if (data) { // Si s'han trobat dades de l'usuari
+      isAdmin.value = data.is_admin || false; // Estableix el valor de 'isAdmin' segons la resposta (o false si no hi és)
     }
   } catch (error) {
     console.error('Error al cargar datos usuario:', error);
   }
 };
 
-const loadFavourites = async () => {
-  if (!userId) return;
+const loadFavourites = async () => { // Funció asíncrona per carregar la llista d'obres favorites de l'usuari
+  if (!userId) return; // Si no hi ha un ID d'usuari, no fa res
 
-  isLoading.value = true;
+  isLoading.value = true; // Indica que la càrrega de favorits està en curs
 
   const { data, error } = await supabase
-    .from('Favorite_play')
-    .select('id_play, play(id_play, title, year, page)') // Selecciona 'id_play' dentro de 'play'
-    .eq('id_user', userId);
+    .from('Favorite_play') // Consulta la taula 'Favorite_play' (assumint que té els favorits)
+    .select('id_play, play(id_play, title, year, page)') // Selecciona l'ID del favorit i les dades de l'obra (incloent l'ID)
+    .eq('id_user', userId); // Filtra per l'ID de l'usuari actual
 
   if (error) {
     console.error('Error carregant favorits:', error.message);
   } else {
-    favouritesWithPage.value = data || [];
+    favouritesWithPage.value = data || []; // Assigna les dades a la variable reactiva (o un array buit si no hi ha dades)
     console.log('Favorits carregats:', favouritesWithPage.value);
   }
 
-  isLoading.value = false;
+  isLoading.value = false; // Indica que la càrrega de favorits ha finalitzat
 };
 
-const deleteFavourite = async (playId: number) => {
+const deleteFavourite = async (playId: number) => { // Funció asíncrona per eliminar una obra dels favorits
   console.log('Intentando borrar favorito:', { userId, playId });
 
-  if (!userId || !playId) {
+  if (!userId || !playId) { // Verifica que l'ID d'usuari i l'ID de l'obra siguin vàlids
     console.warn('userId o playId no válidos');
     return;
   }
 
   const { error } = await supabase
-    .from('Favorite_play')
-    .delete()
-    .eq('id_user', userId)
-    .eq('id_play', playId);
+    .from('Favorite_play') // Consulta la taula 'Favorite_play'
+    .delete() // Realitza una operació d'eliminació
+    .eq('id_user', userId) // Filtra per l'ID de l'usuari
+    .eq('id_play', playId); // Filtra per l'ID de l'obra a eliminar
 
   if (error) {
     console.error('Error eliminant favorit:', error.message);
   } else {
     alert('Obra eliminada dels favorits');
-    favouritesWithPage.value = favouritesWithPage.value.filter(fav => fav.id_play !== playId);
+    favouritesWithPage.value = favouritesWithPage.value.filter(fav => fav.id_play !== playId); // Actualitza la llista de favorits eliminant l'obra
     console.log(`Obra ${playId} eliminada dels favorits.`);
   }
 };
 
-const goToPlay = (play: Play) => {
-  router.push({ path: '/infoPlay', query: { id: play.id_play.toString(), userId } }); // Usa play.id_play
+const goToPlay = (play: Play) => { // Funció per navegar a la pàgina d'informació d'una obra
+  router.push({ path: '/infoPlay', query: { id: play.id_play.toString(), userId } }); // Navega a '/infoPlay' passant l'ID de l'obra i l'ID de l'usuari com a paràmetres de la query
 };
 
-onMounted(async () => {
-  await loadUserData();
-  await loadFavourites();
+onMounted(async () => { // Funció que s'executa quan el component es munta
+  await loadUserData(); // Carrega la informació de l'usuari
+  await loadFavourites(); // Carrega la llista d'obres favorites
 });
 </script>
 
