@@ -1,5 +1,5 @@
 <template>
-  <!-- Menú lateral para móviles -->
+ 
   <ion-menu content-id="main-content" side="start" menu-id="main-menu">
     <ion-header>
       <ion-toolbar color="dark">
@@ -119,6 +119,7 @@
 </template>
 
 <script setup lang="ts">
+/* Importació dels components d'Ionic necessaris per la UI */
 import {
   IonPage,
   IonHeader,
@@ -144,25 +145,37 @@ import {
   IonItem,
 } from '@ionic/vue';
 
+/* Importació d'icones utilitzades */
 import { filmOutline, personOutline } from 'ionicons/icons';
+
+/* Funcionalitats de Vue */
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+
+/* Client de Supabase per interactuar amb la base de dades */
 import supabase from '@/supabaseClient';
 
+/* Obtenir la ruta actual i l'enrutador per navegar entre pàgines */
 const route = useRoute();
 const router = useRouter();
 
+/* Obtenir i validar l'identificador de l'usuari (userId) des de la URL */
 const rawUserId = route.query.userId as string | undefined;
 const realUserId = ref<string | null>(
   rawUserId && rawUserId !== 'null' && rawUserId !== 'undefined' ? rawUserId : null
 );
 
+/* Variables reactives per a la cerca, l'estat de càrrega, errors, etc. */
 const searchText = ref('');
 const plays = ref<any[]>([]);
 const isLoading = ref(true);
 const errorMessage = ref('');
 const isAdmin = ref(false);
 
+/**
+ * Funció per redirigir a la pàgina de detall d'una obra concreta.
+ * Inclou també el userId com a paràmetre de la query.
+ */
 const goToPlayInfo = (movie: any) => {
   router.push({
     path: '/infoPlay',
@@ -170,6 +183,10 @@ const goToPlayInfo = (movie: any) => {
   });
 };
 
+/**
+ * Carrega la informació de l'usuari per saber si és administrador o no.
+ * Es consulta la taula `usuarios` a Supabase.
+ */
 const loadUserData = async () => {
   if (!realUserId.value) {
     isAdmin.value = false;
@@ -190,6 +207,10 @@ const loadUserData = async () => {
   }
 };
 
+/**
+ * Carrega la llista d'obres teatrals des de la taula `play` de Supabase.
+ * Ordena per `id_play` de manera ascendent.
+ */
 const loadPlays = async () => {
   try {
     const { data, error } = await supabase.from('play').select('*').order('id_play', { ascending: true });
@@ -206,11 +227,16 @@ const loadPlays = async () => {
   }
 };
 
+/* Quan el component es munta, carrega dades de l'usuari i les obres */
 onMounted(async () => {
   await loadUserData();
   await loadPlays();
 });
 
+/**
+ * Filtra les obres segons el text introduït a la barra de cerca.
+ * Cerca pel títol, personatges o creador.
+ */
 const filteredMovies = computed(() => {
   const query = searchText.value.toLowerCase();
   return plays.value.filter((movie) => {
@@ -222,32 +248,44 @@ const filteredMovies = computed(() => {
   });
 });
 
+/* Control de la paginació */
 const currentPage = ref(1);
+
+/**
+ * Determina quantes obres mostrar per pàgina segons l'amplada de la finestra.
+ * Menys obres per pàgina en pantalles petites.
+ */
 const moviesPerPage = computed(() => {
   const width = window.innerWidth;
   if (width < 600) return 3;
   else if (width < 960) return 2;
   return 6;
 });
+
+/* Calcula el nombre total de pàgines segons els resultats filtrats */
 const totalPages = computed(() => Math.ceil(filteredMovies.value.length / moviesPerPage.value));
 
+/* Obres a mostrar a la pàgina actual */
 const currentMovies = computed(() => {
   const start = (currentPage.value - 1) * moviesPerPage.value;
   const end = start + moviesPerPage.value;
   return filteredMovies.value.slice(start, end);
 });
 
+/* Funció per anar a la pàgina anterior, si n'hi ha */
 const goToPreviousPage = () => {
   if (currentPage.value > 1) currentPage.value--;
 };
 
+/* Funció per anar a la pàgina següent, si n'hi ha */
 const goToNextPage = () => {
   if (currentPage.value < totalPages.value) currentPage.value++;
 };
 </script>
 
+
 <style scoped>
-/* Layout toolbar */
+
 .toolbar-layout {
   display: flex;
   align-items: center;
@@ -260,13 +298,15 @@ const goToNextPage = () => {
   margin: 4px 0;
 }
 
+
+
 .searchbar-container {
   flex-grow: 1;
   display: flex;
   justify-content: center;
 }
 
-/* Botones y menú */
+
 .buttons-right {
   display: flex;
   align-items: center;
@@ -280,26 +320,26 @@ const goToNextPage = () => {
   flex-grow: 0;
 }
 
-/* Icono película tamaño */
+
 .icon-film {
   width: 20px;
   height: 20px;
   margin-right: 6px;
 }
 
-/* Menú hamburguesa (solo móvil) */
+
 .menu-button-mobile {
   display: flex;
   align-items: center;
 }
 
-/* Botones escritorio (ocultos por defecto) */
+
 .buttons-desktop {
   display: none;
   align-items: center;
 }
 
-/* Media query para pantallas >= 768px */
+
 @media (min-width: 768px) {
   .buttons-desktop {
     display: flex;
@@ -309,7 +349,7 @@ const goToNextPage = () => {
   }
 }
 
-/* Estilos para imágenes y cards */
+
 .movie-image {
   width: 100%;
   height: auto;
@@ -339,10 +379,10 @@ const goToNextPage = () => {
   margin-bottom: 1rem;
 }
 .custom-top-spacing {
-  margin-top: 150px; /* Puedes ajustar este valor para más o menos espacio */
+  margin-top: 150px; 
 }
 
-/* Responsive images height */
+
 @media (max-width: 600px) {
   .movie-image {
     height: 300px;
@@ -391,7 +431,7 @@ const goToNextPage = () => {
   }
 }
 
-/* Footer fijo al fondo */
+
 #main-content {
   display: flex;
   flex-direction: column;
