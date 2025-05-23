@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Importació de components d'Ionic i Vue
+// Importem components d'Ionic per construir la UI
 import {
   IonPage,
   IonHeader,
@@ -14,76 +14,84 @@ import {
   IonButtons
 } from '@ionic/vue';
 
-import { ref, onMounted,onUpdated } from 'vue';
+// Importem utilitats de Vue i icones d'Ionicons
+import { ref, onMounted, onUpdated } from 'vue';
 import { trashOutline, createOutline, addOutline, personOutline } from 'ionicons/icons';
-import supabase from '@/supabaseClient';
-import { useRoute,useRouter } from 'vue-router';
 
-// Inicialització del router i ruta per a la navegació
+// Importem la configuració de Supabase i eines de routing de Vue Router
+import supabase from '@/supabaseClient'
+import { useRoute, useRouter } from 'vue-router';
+
+// Inicialitzem router i route per a la navegació i accés als paràmetres de la URL
 const router = useRouter();
 const route = useRoute();
 
-// Obtenir l'identificador de l'usuari des de la query de l'URL
+// Agafem el userId passat com a paràmetre a la query de la ruta
 const userId = route.query.userId as string | undefined;
 
-// Estat per controlar si es carreguen dades o hi ha errors
+// Estat reactiu per indicar si està carregant dades
 const isLoading = ref(true);
+
+// Missatge d'error en cas que alguna operació falli
 const errorMessage = ref('');
 
-// Llista reactiva d'obres
+// Llista reactiva d'obres carregades de la base de dades
 const plays = ref<{ id: number; title: string; year: string }[]>([]);
 
-// Funció per carregar totes les obres des de la base de dades
+// Funció per carregar totes les obres des de la taula 'play'
 const loadPlays = async () => {
-  isLoading.value = true;
+  isLoading.value = true; // Marquem que comença la càrrega
 
+  // Consulta a Supabase per obtenir totes les obres ordenades per id ascendent
   const { data, error } = await supabase.from('play').select('*').order('id', { ascending: true });
 
   if (error) {
-    // Mostra un missatge d'error si falla la càrrega
+    // En cas d'error guardem el missatge i el mostrem per consola
     errorMessage.value = 'No es poden carregar les obres.';
     console.error(error);
   } else {
-    // Assigna les obres recuperades a la variable reactiva
+    // Assignem les dades obtingudes a la llista d'obres
     plays.value = data;
   }
 
-  isLoading.value = false;
+  isLoading.value = false; // Finalitza la càrrega
 };
 
-// Funció per eliminar una obra per ID
+// Funció per eliminar una obra segons el seu id
 const deletePlay = async (id: number) => {
+  // Executa la consulta per eliminar la fila amb l'id especificat
   const { error } = await supabase.from('play').delete().eq('id', id);
 
   if (error) {
-    // Mostra un error si no es pot eliminar
+    // Si hi ha error, el mostrem per consola
     console.error('Error eliminant obra:', error.message);
   } else {
-    // Elimina localment l'obra eliminada
+    // Si s'elimina bé, actualitzem la llista filtrant l'obra eliminada
     plays.value = plays.value.filter(play => play.id !== id);
   }
 };
 
-// Navegació per editar una obra
+// Funció per navegar a la pàgina d'edició d'una obra, passant l'id i userId per query
 const editPlay = (idPlay: number) => {
   router.push({ path: `/EditPlay?userId=${userId}`, query: { id: idPlay.toString() } });
 };
 
-// Navegació per crear una nova obra
+// Funció per navegar a la pàgina de creació d'una nova obra, passant el userId
 const goToCreatePlay = () => {
   router.push(`/CreatePlay?userId=${userId}`);
 };
 
-// Crida la funció per carregar obres quan el component es munta
+// Quan el component està muntat, carreguem les obres
 onMounted(() => {
   loadPlays();
 });
 
 /* 
-// Si vols que les obres es recarreguin cada vegada que el component s'actualitza, descomenta això
-onUpdated(() => {
-  loadPlays();
-});
+// Aquesta part està comentada, però si es descomenta, la càrrega d'obres es farà també cada vegada que el component s'actualitzi.
+// Pot ser útil si les dades canvien sovint i volem refrescar-les automàticament.
+// onUpdated(() => {
+//   loadPlays();
+// }); 
 */
 </script>
 
