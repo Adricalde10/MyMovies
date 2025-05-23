@@ -3,26 +3,48 @@
     <ion-header>
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-back-button default-href="/"> </ion-back-button>
+          <ion-back-button default-href="/"></ion-back-button>
         </ion-buttons>
-        <ion-title>Nova obra</ion-title> </ion-toolbar>
+        <ion-title>Nova obra</ion-title>
+      </ion-toolbar>
     </ion-header>
-    <ion-content class="ion-padding bg-gray-100"> <form @submit.prevent="submitForm"> <ion-item class="mb-4 rounded-lg bg-white shadow-md"> <ion-label position="stacked" class="label-grande">Títol</ion-label> <ion-input v-model="formData.title" type="text" required></ion-input> </ion-item>
+    <ion-content class="ion-padding bg-gray-100">
+      <form @submit.prevent="submitForm">
+        <ion-item class="mb-4 rounded-lg bg-white shadow-md">
+          <ion-label position="stacked" class="label-grande">Títol</ion-label>
+          <ion-input v-model="formData.title" type="text" required></ion-input>
+        </ion-item>
 
-        <ion-item class="mb-4 rounded-lg bg-white shadow-md"> <ion-label position="stacked" class="label-grande">Portada</ion-label> <input type="file" accept="image/*" @change="handleFileChange" class="w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary-500">
-          <div v-if="coverPreview" class="mt-2"> <img :src="coverPreview" alt="Vista prèvia de la portada" class="max-w-full h-auto rounded-md shadow-sm">
+        <ion-item class="mb-4 rounded-lg bg-white shadow-md">
+          <ion-label position="stacked" class="label-grande">Portada</ion-label>
+          <input type="file" accept="image/*" @change="handleFileChange" class="w-full py-2 px-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary-500">
+          <div v-if="coverPreview" class="mt-2">
+            <img :src="coverPreview" alt="Vista prèvia de la portada" class="max-w-full h-auto rounded-md shadow-sm">
           </div>
         </ion-item>
 
-        <ion-item class="mb-4 rounded-lg bg-white shadow-md"> <ion-label position="stacked" class="label-grande">Creador/Autoria</ion-label> <ion-input v-model="formData.creator" type="text"></ion-input> </ion-item>
+        <ion-item class="mb-4 rounded-lg bg-white shadow-md">
+          <ion-label position="stacked" class="label-grande">Creador/Autoria</ion-label>
+          <ion-input v-model="formData.creator" type="text"></ion-input>
+        </ion-item>
 
-        <ion-item class="mb-4 rounded-lg bg-white shadow-md"> <ion-label position="stacked" class="label-grande">Personatges</ion-label> <ion-textarea v-model="formData.characters"></ion-textarea> </ion-item>
+        <ion-item class="mb-4 rounded-lg bg-white shadow-md">
+          <ion-label position="stacked" class="label-grande">Personatges</ion-label>
+          <ion-textarea v-model="formData.characters"></ion-textarea>
+        </ion-item>
 
-        <ion-item class="mb-4 rounded-lg bg-white shadow-md"> <ion-label position="stacked" class="label-grande">Any de Creació</ion-label> <ion-input v-model="formData.year" type="number"></ion-input> </ion-item>
+        <ion-item class="mb-4 rounded-lg bg-white shadow-md">
+          <ion-label position="stacked" class="label-grande">Any de Creació</ion-label>
+          <ion-input v-model="formData.year" type="number"></ion-input>
+        </ion-item>
 
-        <ion-item class="mb-6 rounded-lg bg-white shadow-md"> <ion-label position="stacked" class="label-grande">Descripció</ion-label> <ion-textarea v-model="formData.description"></ion-textarea> </ion-item>
+        <ion-item class="mb-6 rounded-lg bg-white shadow-md">
+          <ion-label position="stacked" class="label-grande">Descripció</ion-label>
+          <ion-textarea v-model="formData.description"></ion-textarea>
+        </ion-item>
 
-        <ion-button type="submit" expand="full" color="primary" class="rounded-lg"> Guardar canvis
+        <ion-button type="submit" expand="full" color="primary" class="rounded-lg">
+          Guardar canvis
         </ion-button>
       </form>
     </ion-content>
@@ -30,105 +52,122 @@
 </template>
 
 <script setup lang="ts">
-import { IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent, IonItem, IonLabel, IonInput, IonButton, IonTextarea } from '@ionic/vue'; // Importació dels components d'Ionic necessaris
-import { ref, onMounted } from 'vue'; // Importació de 'ref' per a variables reactives i 'onMounted' per a accions al muntar el component
-import { useRouter, useRoute } from 'vue-router'; // Importació de 'useRouter' per la navegació i 'useRoute' per accedir a la ruta actual
-import supabase from '@/supabaseClient'; // Importació de la instància de Supabase
+// Importació dels components d'Ionic per a la construcció de la interfície d'usuari.
+import { IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent, IonItem, IonLabel, IonInput, IonButton, IonTextarea } from '@ionic/vue';
+// Importació de funcions de Vue per a la reactivitat i el cicle de vida.
+import { ref, onMounted } from 'vue';
+// Importació de Vue Router per gestionar la navegació.
+import { useRouter, useRoute } from 'vue-router';
+// Importació de la instància de Supabase prèviament configurada.
+import supabase from '@/supabaseClient';
 
-const route = useRoute(); // Obté l'objecte de la ruta actual
-const userId = route.query.userId as string | undefined; // Obté el 'userId' dels paràmetres de la query, amb tipus string o undefined
+// Obtenim la ruta actual per llegir els paràmetres de la URL.
+const route = useRoute();
+// Obtenim l'userId des dels paràmetres de la query.
+const userId = route.query.userId as string | undefined;
 
-const router = useRouter(); // Obté l'objecte del router per a la navegació
+// Instància del router per fer redireccions programàtiques.
+const router = useRouter();
 
-
-const formData = ref({ // Defineix un objecte reactiu per emmagatzemar les dades del formulari
-  title: '',
-  coverFile: null as File | null, // Permet un objecte File o null per al fitxer de portada
-  creator: '',
-  characters: '',
-  year: null,
-  description: '',
+// Objecte reactiu per emmagatzemar les dades del formulari.
+const formData = ref({
+  title: '',                       // Títol de l’obra
+  coverFile: null as File | null, // Fitxer de portada seleccionat
+  creator: '',                    // Autor o creador
+  characters: '',                 // Personatges
+  year: null,                     // Any
+  description: '',                // Descripció
 });
 
-const isLoading = ref(false); // Variable reactiva per controlar si s'està processant l'enviament del formulari
-const errorMessage = ref<string | null>(null); // Variable reactiva per emmagatzemar missatges d'error
-const coverPreview = ref<string | null>(null); // Variable reactiva per emmagatzemar la URL de la previsualització de la portada
+// Estat de càrrega per evitar múltiples enviaments.
+const isLoading = ref(false);
+// Missatge d'error si alguna operació falla.
+const errorMessage = ref<string | null>(null);
+// Previsualització de la portada seleccionada.
+const coverPreview = ref<string | null>(null);
 
- const handleFileChange = (event: Event) => { // Funció que es crida quan canvia el fitxer seleccionat
-  const target = event.target as HTMLInputElement; // Casteja l'event target a un input de tipus fitxer
-  if (target.files && target.files.length > 0) { // Verifica si hi ha algun fitxer seleccionat
-    formData.value.coverFile = target.files[0]; // Assigna el primer fitxer seleccionat a 'formData.coverFile'
-    // Crear una URL per a la previsualització de la imatge
-    coverPreview.value = URL.createObjectURL(target.files[0]); // Crea una URL local per previsualitzar la imatge seleccionada
+// Funció per gestionar el canvi de fitxer (imatge de portada).
+const handleFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files.length > 0) {
+    formData.value.coverFile = target.files[0]; // Assignem el fitxer seleccionat
+    coverPreview.value = URL.createObjectURL(target.files[0]); // Previsualització
   } else {
-    formData.value.coverFile = null; // Si no hi ha fitxers, neteja 'formData.coverFile'
-    coverPreview.value = null; // I neteja la URL de la previsualització
+    formData.value.coverFile = null;
+    coverPreview.value = null;
   }
 };
 
-const submitForm = async () => { // Funció asíncrona que s'executa al enviar el formulari
-  console.log('Dades del formulari:', formData.value); // Mostra les dades del formulari a la consola
-  if (isLoading.value) return; // Si ja s'està carregant, evita enviaments múltiples
-  isLoading.value = true; // Estableix l'estat de càrrega a true
-  errorMessage.value = null; // Reinicia el missatge d'error
+// Funció asíncrona per enviar el formulari
+const submitForm = async () => {
+  console.log('Dades del formulari:', formData.value);
+  if (isLoading.value) return; // Evitem dobles clics
+  isLoading.value = true;
+  errorMessage.value = null;
 
   try {
-    const { title, creator, characters, year, description, coverFile } = formData.value; // Desestructura les dades del formulari
+    const { title, creator, characters, year, description, coverFile } = formData.value;
 
-    let coverUrl: string | null = null; // Inicialitza la variable per la URL de la portada
-    if (coverFile) { // Si hi ha un fitxer de portada seleccionat
-      // 1. Subir la imagen a Supabase Storage
-      const fileName = `cover-${Date.now()}-${coverFile.name}`; // Genera un nom de fitxer únic
+    let coverUrl: string | null = null;
+
+    if (coverFile) {
+      // Generem un nom únic per evitar col·lisions
+      const fileName = `cover-${Date.now()}-${coverFile.name}`;
+
+      // Pugem el fitxer al bucket 'butaca1' de Supabase Storage
       const { data: storageData, error: storageError } = await supabase.storage
-        .from('butaca1') // Especifica el bucket de Supabase Storage ('butaca1')
-        .upload(fileName, coverFile, { // Puja el fitxer
-          cacheControl: '3600', // Opcional: Control de caché
-          upsert: false,
+        .from('butaca1')
+        .upload(fileName, coverFile, {
+          cacheControl: '3600', // Control de caché (opcional)
+          upsert: false,        // No sobreescriure fitxers existents
         });
 
-      if (storageError) { // Si hi ha un error al pujar la portada
+      if (storageError) {
         console.error('Error al subir la portada:', storageError);
         errorMessage.value = `Error al subir la portada: ${storageError.message}`;
         isLoading.value = false;
-        return; // Importante: Detener el proceso si falla la subida
+        return;
       }
-      coverUrl = supabase.storage.from('butaca1').getPublicUrl(storageData.path).data.publicUrl; // Obté la URL pública de la imatge pujada
+
+      // Obtenim la URL pública de la imatge
+      coverUrl = supabase.storage.from('butaca1').getPublicUrl(storageData.path).data.publicUrl;
     }
 
-    // 2. Guardar los datos en la tabla 'play' de Supabase
+    // Inserim les dades a la taula 'play'
     const { data: dbData, error: dbError } = await supabase
-      .from('play') // Especifica la taula de Supabase ('play')
-      .insert([ // Insereix una nova fila amb les dades del formulari
+      .from('play')
+      .insert([
         {
           title,
           creator,
-          characters: characters, // Guarda la string tal cual
+          characters: characters,
           year: year ? year : null,
           description,
-          page: coverUrl, // Guarda la URL de la portada
+          page: coverUrl, // URL de la portada
         },
       ])
-      .select(); // Para que devuelva los datos insertados
+      .select(); // Retorna les dades creades
 
-    if (dbError) { // Si hi ha un error al inserir les dades a la base de dades
+    if (dbError) {
       console.error('Error al insertar en la base de datos:', dbError);
       errorMessage.value = `Error al guardar la obra: ${dbError.message}`;
       isLoading.value = false;
       return;
     }
 
-    console.log('Obra creada correctamente:', dbData); // Mostra les dades de la obra creada a la consola
+    console.log('Obra creada correctamente:', dbData);
 
-  } catch (error: any) { // Captura qualsevol error inesperat
+  } catch (error: any) {
     console.error('Error inesperado:', error);
     errorMessage.value = `Error inesperado: ${error.message}`;
   } finally {
-    isLoading.value = false; // Asegura que el estado de carga se restablezca
+    isLoading.value = false; // Restablim estat de càrrega
   }
 
-  router.push({ // Redirigeix a la ruta '/ManageContent'
+  // Redirigim a la pàgina de gestió de contingut
+  router.push({
     path: '/ManageContent',
-    query: { // Passa el 'userId' com a paràmetre de la query
+    query: {
       userId: userId,
     }
   });
@@ -137,24 +176,24 @@ const submitForm = async () => { // Funció asíncrona que s'executa al enviar e
 
 <style scoped>
 ion-item {
-  --padding-start: 16px; /* Defineix el padding a l'inici dels items de la llista */
-  --inner-padding-end: 16px; /* Defineix el padding al final dels items de la llista */
+  --padding-start: 16px;        /* Espai al començament de l’element */
+  --inner-padding-end: 16px;    /* Espai al final de l’interior de l’element */
 }
 
 ion-label {
-  color: var(--ion-color-gray-700); /* Estableix el color de les etiquetes a un gris */
+  color: var(--ion-color-gray-700); /* Color del text de les etiquetes */
 }
 
 ion-input,
 ion-textarea {
-  --padding-top: 8px; /* Defineix el padding superior dels camps d'entrada i àrees de text */
-  --padding-bottom: 8px; /* Defineix el padding inferior dels camps d'entrada i àrees de text */
-  color: var(--ion-color-dark); /* Estableix el color del text dels camps d'entrada i àrees de text a negre */
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  color: var(--ion-color-dark);     /* Color del text dins del camp */
 }
 
 /* Estil per fer la lletra de la label més gran */
 .label-grande {
-  font-size: 1.2em; /* Augmenta la mida de la font de les etiquetes amb aquesta classe */
-  font-weight: bold; /* Posa en negreta les etiquetes amb aquesta classe */
+  font-size: 1.2em;   /* Mida de lletra més gran */
+  font-weight: bold;  /* Text en negreta */
 }
 </style>
