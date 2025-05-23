@@ -76,18 +76,16 @@
   </ion-page>
 </template>
 <script setup lang="ts">
+// Importem ref de Vue per a dades reactives
 import { ref } from 'vue';
-import {
-  IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton,
-  IonTitle, IonContent, IonItem, IonLabel, IonInput, IonButton, IonTextarea
-} from '@ionic/vue';
-
-import supabase from '@/supabaseClient'; // Client Supabase per interactuar amb la BBDD
-
-// Icones usades en el template
+// Importem components d'Ionic per la UI del formulari
+import { IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent, IonItem, IonLabel, IonInput, IonButton, IonTextarea } from '@ionic/vue';
+// Importem supabase per fer peticions a la base de dades i autenticació
+import supabase from '@/supabaseClient';
+// Importem icones (tot i que no s'utilitzen aquí directament)
 import { filmOutline, personOutline, starOutline } from 'ionicons/icons';
 
-// Model del formulari (reactiu)
+// Objecte reactiu per guardar les dades del formulari
 const formData = ref({
   name: '',
   email: '',
@@ -95,7 +93,7 @@ const formData = ref({
   confirmPassword: '',
 });
 
-// Missatges d’error per cada camp
+// Objecte reactiu per guardar els errors de validació per cada camp
 const errors = ref({
   name: '',
   email: '',
@@ -103,42 +101,51 @@ const errors = ref({
   confirmPassword: '',
 });
 
-// Funció per validar que tots els camps siguin correctes
+// Funció que valida el formulari i actualitza els errors
 const validateForm = () => {
   errors.value = {
+    // Nom ha d'estar omplert
     name: formData.value.name ? '' : 'El nom és obligatori.',
-    email: formData.value.email && /\S+@\S+\.\S+/.test(formData.value.email)
-      ? '' : 'Correo electrònic no vàlid.',
+    // Email ha de tenir format vàlid
+    email: formData.value.email && /\S+@\S+\.\S+/.test(formData.value.email) ? '' : 'Correo electrònic no vàlid.',
+    // Password obligatori
     password: formData.value.password ? '' : 'La contrasenya és obligatoria.',
-    confirmPassword: formData.value.confirmPassword === formData.value.password
-      ? '' : 'Les contrasenyes no coincideixen.',
+    // Confirmar password ha de coincidir amb password
+    confirmPassword:
+      formData.value.confirmPassword === formData.value.password
+        ? ''
+        : 'Les contrasenyes no coincideixen.',
   };
 
-  // Retorna true si no hi ha cap error
+  // Retorna true si no hi ha errors (tots els valors són cadenes buides)
   return !Object.values(errors.value).some((e) => e !== '');
 };
 
-// Funció per gestionar el registre de l'usuari
+// Funció que gestiona l'enviament del formulari per registrar un usuari nou
 const handleSubmit = async () => {
-  if (!validateForm()) return; // No segueix si hi ha errors
+  // Validem el formulari i si no és vàlid, parem aquí
+  if (!validateForm()) return;
 
   try {
-    // Crea el compte d'usuari amb Supabase
+    // Intentem registrar l'usuari amb Supabase Authentication
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: formData.value.email,
       password: formData.value.password,
     });
 
+    // Si hi ha error, el llença per capturar-lo més endavant
     if (signUpError) throw signUpError;
 
+    // Obtenim l'usuari creat
     const user = signUpData?.user;
 
+    // Si no hi ha usuari (ex: registre pendent confirmació), avisa a l'usuari
     if (!user) {
       alert('Registre creat, pero has de verificar el teu correu.');
       return;
     }
 
-    // Desa informació addicional de l’usuari a la taula `usuarios`
+    // Inserim l'usuari a la taula 'usuarios' amb dades addicionals (nom i email)
     const { error: dbError } = await supabase.from('usuarios').insert([
       {
         user_id: user.id,
@@ -147,10 +154,13 @@ const handleSubmit = async () => {
       },
     ]);
 
+    // Si hi ha error a la base de dades, el llença per capturar-lo més endavant
     if (dbError) throw dbError;
 
+    // Confirmació d'èxit al registrar l'usuari
     alert('¡Registre exitós!');
   } catch (err: any) {
+    // En cas d'error, mostrar un missatge amb el detall de l'error
     alert('Error al registrar: ' + err.message);
   }
 };
