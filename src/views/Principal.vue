@@ -1,46 +1,24 @@
 <template>
- 
-  <ion-menu content-id="main-content" side="start" menu-id="main-menu">
-    <ion-header>
-      <ion-toolbar color="dark">
-        <ion-title>Menú</ion-title>
-      </ion-toolbar>
-    </ion-header>
-    <ion-content>
-      <ion-list>
-        <ion-item v-if="realUserId" :router-link="`/InfoFavourites?userId=${realUserId}`">Favorits</ion-item>
-        <ion-item v-if="realUserId && isAdmin" :router-link="`/ManageContent?userId=${realUserId}`">Gestionar Continguts</ion-item>
-        <ion-item v-if="realUserId" :router-link="`/infoUser?userId=${realUserId}`">Perfil</ion-item>
-        <ion-item v-if="!realUserId" router-link="/login">Iniciar Sessió</ion-item>
-        <ion-item v-if="!realUserId" router-link="/Register">Registre</ion-item>
-      </ion-list>
-    </ion-content>
-  </ion-menu>
-
-  <ion-page id="main-content">
+  <ion-page>
     <ion-header translucent>
       <ion-toolbar color="dark" class="toolbar-layout">
-        <ion-buttons slot="start" class="menu-button-mobile">
-          <ion-menu-button />
-        </ion-buttons>
-
         <ion-title class="title-aligned flex items-center space-x-2 text-green-400">
-          <ion-icon :icon="filmOutline" class="icon-film"></ion-icon>
+          <ion-icon :icon="filmOutline" class="w-5 h-5"></ion-icon>
           <span>Butaca1</span>
         </ion-title>
 
-        <ion-buttons slot="end" class="buttons-desktop buttons-right">
-          <template v-if="realUserId">
-            <ion-button :href="`/InfoFavourites?userId=${realUserId}`" size="small">
+        <ion-buttons slot="end" class="buttons-right">
+          <template v-if="userId">
+            <ion-button :href="`/InfoFavourites?userId=${userId}`" size="small">
               <span class="text-white text-sm">Favorits</span>
             </ion-button>
-            <ion-button v-if="isAdmin" :href="`/ManageContent?userId=${realUserId}`" size="small">
+            <ion-button v-if="isAdmin" :href="`/ManageContent?userId=${userId}`" size="small">
               <span class="text-white text-sm">Gestionar continguts</span>
             </ion-button>
           </template>
           <template v-else>
             <ion-button href="/login" size="small">
-              <span class="text-white text-sm">Iniciar Sessió</span>
+              <span class="text-white text-sm">Iniciar Sessió </span>
             </ion-button>
             <ion-button href="/Register" size="small">
               <span class="text-white text-sm">Registre</span>
@@ -58,15 +36,13 @@
           />
         </div>
 
-        <ion-buttons slot="end" class="user-icon-button" v-if="realUserId">
-          <ion-button :href="`/infoUser?userId=${realUserId}`" size="small">
+        <ion-buttons slot="end" v-if="userId">
+          <ion-button :href="`/infoUser?userId=${userId}`" size="small">
             <ion-icon :icon="personOutline" />
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
-
-    <div class="ion-safe-area-top"></div>
 
     <ion-content fullscreen class="ion-padding bg-gray-50 text-gray-900">
       <div v-if="isLoading" class="ion-text-center">
@@ -77,8 +53,8 @@
         <p>{{ errorMessage }}</p>
       </div>
 
-      <div v-else class="custom-top-spacing">
-        <h2 class="title-section">Descobreix Teatres</h2>
+      <div v-else>
+        <h2 class="text-2xl font-bold mb-4">Descobreix Teatres</h2>
 
         <ion-grid>
           <ion-row>
@@ -89,37 +65,41 @@
               :size-sm="6"
               :size-md="4"
             >
-              <ion-card class="movie-card" @click="goToPlayInfo(movie)">
+              <ion-card class="rounded-lg overflow-hidden shadow-md" @click="goToPlayInfo(movie)">
                 <img :src="movie.page" :alt="movie.title" class="movie-image" />
                 <ion-card-header>
-                  <ion-card-title class="movie-title">{{ movie.title }}</ion-card-title>
-                  <ion-card-subtitle class="movie-subtitle">{{ movie.year }}</ion-card-subtitle>
+                  <ion-card-title class="text-sm font-bold">{{ movie.title }}</ion-card-title>
+                  <ion-card-subtitle class="text-xs text-gray-600">{{ movie.year }}</ion-card-subtitle>
                 </ion-card-header>
               </ion-card>
             </ion-col>
           </ion-row>
         </ion-grid>
+
+        <ion-footer class="ion-no-border">
+          <ion-toolbar color="dark">
+            <ion-buttons slot="start">
+              <ion-button :disabled="currentPage === 1" @click="goToPreviousPage">
+                Anterior
+              </ion-button>
+            </ion-buttons>
+
+            <ion-title>{{ currentPage }} / {{ totalPages }}</ion-title>
+
+            <ion-buttons slot="end">
+              <ion-button :disabled="currentPage === totalPages" @click="goToNextPage">
+                Seguent
+              </ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-footer>
       </div>
     </ion-content>
-
-    <ion-footer class="ion-no-border">
-      <ion-toolbar color="dark">
-        <ion-buttons slot="start">
-          <ion-button :disabled="currentPage === 1" @click="goToPreviousPage">Anterior</ion-button>
-        </ion-buttons>
-
-        <ion-title>{{ currentPage }} / {{ totalPages }}</ion-title>
-
-        <ion-buttons slot="end">
-          <ion-button :disabled="currentPage === totalPages" @click="goToNextPage">Seguent</ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-footer>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-/* Importació dels components d'Ionic necessaris per la UI */
+// Importem components d'Ionic per a construir la UI de la pàgina
 import {
   IonPage,
   IonHeader,
@@ -138,108 +118,108 @@ import {
   IonButton,
   IonButtons,
   IonFooter,
-  IonSpinner,
-  IonMenu,
-  IonMenuButton,
-  IonList,
-  IonItem,
+  IonSpinner
 } from '@ionic/vue';
 
-/* Importació d'icones utilitzades */
+// Importem icones d'Ionicons i utilitats de Vue i Vue Router
 import { filmOutline, personOutline } from 'ionicons/icons';
-
-/* Funcionalitats de Vue */
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-
-/* Client de Supabase per interactuar amb la base de dades */
 import supabase from '@/supabaseClient';
 
-/* Obtenir la ruta actual i l'enrutador per navegar entre pàgines */
+// Obtenim el userId de la query de la ruta actual
 const route = useRoute();
+const userId = route.query.userId as string | undefined;
+
 const router = useRouter();
 
-/* Obtenir i validar l'identificador de l'usuari (userId) des de la URL */
-const rawUserId = route.query.userId as string | undefined;
-const realUserId = ref<string | null>(
-  rawUserId && rawUserId !== 'null' && rawUserId !== 'undefined' ? rawUserId : null
-);
-
-/* Variables reactives per a la cerca, l'estat de càrrega, errors, etc. */
+// Control del text del cercador
 const searchText = ref('');
+
+// Estats reactius per a les obres, càrrega i errors
 const plays = ref<any[]>([]);
 const isLoading = ref(true);
 const errorMessage = ref('');
+
+// Estat per saber si l'usuari és admin
 const isAdmin = ref(false);
 
-/**
- * Funció per redirigir a la pàgina de detall d'una obra concreta.
- * Inclou també el userId com a paràmetre de la query.
- */
+// Funció per navegar a la pàgina d'informació d'una obra
 const goToPlayInfo = (movie: any) => {
+  const query: any = { id: movie.id_play };
+
+  // Afegim userId a la query si existeix per mantenir context
+  if (userId) {
+    query.userId = userId;
+  }
+
   router.push({
     path: '/infoPlay',
-    query: { id: movie.id_play, userId: realUserId.value },
+    query,
   });
 };
 
-/**
- * Carrega la informació de l'usuari per saber si és administrador o no.
- * Es consulta la taula `usuarios` a Supabase.
- */
+// Funció per carregar dades de l'usuari i saber si és admin
 const loadUserData = async () => {
-  if (!realUserId.value) {
-    isAdmin.value = false;
-    return;
-  }
+  if (!userId) return; // Si no hi ha userId, no fem res
   try {
+    // Consulta a la taula 'usuarios' per obtenir la propietat is_admin
     const { data, error } = await supabase
       .from('usuarios')
       .select('is_admin')
-      .eq('user_id', realUserId.value)
+      .eq('user_id', userId)
       .single();
 
     if (error) throw error;
-    if (data) isAdmin.value = data.is_admin || false;
+
+    if (data) {
+      // Assignem el valor a la variable reactiva
+      isAdmin.value = data.is_admin || false;
+    }
   } catch (error) {
+    // En cas d'error mostrem per consola
     console.error('Error al cargar datos usuario:', error);
-    isAdmin.value = false;
   }
 };
 
-/**
- * Carrega la llista d'obres teatrals des de la taula `play` de Supabase.
- * Ordena per `id_play` de manera ascendent.
- */
+// Funció per carregar totes les obres des de Supabase
 const loadPlays = async () => {
   try {
-    const { data, error } = await supabase.from('play').select('*').order('id_play', { ascending: true });
+    // Consulta a la taula 'play' ordenada per id_play ascendent
+    const { data, error } = await supabase
+      .from('play')
+      .select('*')
+      .order('id_play', { ascending: true });
 
     if (error) throw error;
-    plays.value = data || [];
+
     if (!data || data.length === 0) {
+      // Si no hi ha dades o la taula està buida, establim un missatge d'error
       errorMessage.value = 'La tabla está vacía o no tienes permiso de lectura.';
+    } else {
+      // Assignem les dades a la llista reactiva d'obres
+      plays.value = data;
     }
   } catch (error: any) {
+    // En cas d'error general, actualitzem el missatge
     errorMessage.value = 'No se pudo cargar las obras.';
   } finally {
+    // Sempre desactivem el loader al finalitzar
     isLoading.value = false;
   }
 };
 
-/* Quan el component es munta, carrega dades de l'usuari i les obres */
+// Quan el component es monta, carreguem dades d'usuari i obres
 onMounted(async () => {
   await loadUserData();
   await loadPlays();
 });
 
-/**
- * Filtra les obres segons el text introduït a la barra de cerca.
- * Cerca pel títol, personatges o creador.
- */
+// Computed per filtrar les obres segons el text del cercador
 const filteredMovies = computed(() => {
   const query = searchText.value.toLowerCase();
   return plays.value.filter((movie) => {
+    // Retornem true si algun dels camps coincideix amb la cerca (sense majúscules)
     return (
       movie.title?.toLowerCase().includes(query) ||
       movie.characters?.toLowerCase().includes(query) ||
@@ -248,36 +228,46 @@ const filteredMovies = computed(() => {
   });
 });
 
-/* Control de la paginació */
+// Variables per paginació
 const currentPage = ref(1);
 
-/**
- * Determina quantes obres mostrar per pàgina segons l'amplada de la finestra.
- * Menys obres per pàgina en pantalles petites.
- */
+// Computed per determinar quantes pel·lícules mostrar per pàgina segons l'ample de pantalla
 const moviesPerPage = computed(() => {
   const width = window.innerWidth;
-  if (width < 600) return 3;
-  else if (width < 960) return 2;
-  return 6;
+  if (width < 600) {
+    return 3; // 1 columna en pantalles molt petites
+  } else if (width < 960) {
+    return 2; // 2 columnes en pantalles petites
+  } else {
+    return 6; // 3 columnes en pantalles mitjanes i grans
+  }
 });
 
-/* Calcula el nombre total de pàgines segons els resultats filtrats */
+// Computed per calcular el total de pàgines en base a les pel·lícules filtrades i pel·lícules per pàgina
 const totalPages = computed(() => Math.ceil(filteredMovies.value.length / moviesPerPage.value));
 
-/* Obres a mostrar a la pàgina actual */
+// Computed per obtenir les pel·lícules que s'han de mostrar en la pàgina actual
 const currentMovies = computed(() => {
   const start = (currentPage.value - 1) * moviesPerPage.value;
   const end = start + moviesPerPage.value;
   return filteredMovies.value.slice(start, end);
 });
 
-/* Funció per anar a la pàgina anterior, si n'hi ha */
+// Computed que divideix les pel·lícules actuals en "chunks" o blocs per mostrar a la UI (pot ser útil per files i columnes)
+const movieChunks = computed(() => {
+  const chunks = [];
+  for (let i = 0; i < currentMovies.value.length; i += moviesPerPage.value) {
+    chunks.push(currentMovies.value.slice(i, i + moviesPerPage.value));
+  }
+  return chunks;
+});
+
+// Funció per passar a la pàgina anterior, si no estem a la primera
 const goToPreviousPage = () => {
   if (currentPage.value > 1) currentPage.value--;
 };
 
-/* Funció per anar a la pàgina següent, si n'hi ha */
+// Funció per passar a la pàgina següent, si no estem a l'última
 const goToNextPage = () => {
   if (currentPage.value < totalPages.value) currentPage.value++;
 };
@@ -285,6 +275,23 @@ const goToNextPage = () => {
 
 
 <style scoped>
+.movie-image {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.searchbar-small {
+  max-width: 500px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: 1rem;
+}
+
+.searchbar-centered {
+  max-width: 100%;
+  margin: 0 auto;
+}
 
 .toolbar-layout {
   display: flex;
@@ -298,14 +305,11 @@ const goToNextPage = () => {
   margin: 4px 0;
 }
 
-
-
 .searchbar-container {
   flex-grow: 1;
   display: flex;
   justify-content: center;
 }
-
 
 .buttons-right {
   display: flex;
@@ -320,126 +324,16 @@ const goToNextPage = () => {
   flex-grow: 0;
 }
 
-
-.icon-film {
-  width: 20px;
-  height: 20px;
-  margin-right: 6px;
-}
-
-
-.menu-button-mobile {
-  display: flex;
-  align-items: center;
-}
-
-
-.buttons-desktop {
-  display: none;
-  align-items: center;
-}
-
-
-@media (min-width: 768px) {
-  .buttons-desktop {
-    display: flex;
-  }
-  .menu-button-mobile {
-    display: none;
-  }
-}
-
-
-.movie-image {
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-}
-
-.movie-card {
-  border-radius: 0.5rem;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-}
-
-.movie-title {
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.movie-subtitle {
-  font-size: 0.75rem;
-  color: #4a5568;
-}
-
-.title-section {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-.custom-top-spacing {
-  margin-top: 150px; 
-}
-
-
+/* Ajusta la mida de la imatge en pantalles més petites */
 @media (max-width: 600px) {
   .movie-image {
     height: 300px;
   }
 }
 
-
 @media (max-width: 400px) {
   .movie-image {
     height: 200px;
   }
-}
-
-.bg-gray-50 {
-  background-color: #f9fafb;
-}
-
-.text-gray-900 {
-  color: #111827;
-}
-
-.text-white {
-  color: white;
-}
-
-.text-sm {
-  font-size: 0.875rem;
-}
-
-.user-icon-button {
-  display: flex;
-  align-items: center;
-  margin-left: 8px;
-}
-
-.user-icon-button ion-icon {
-  width: 24px;
-  height: 24px;
-  color: white;
-}
-
-@media (min-width: 768px) {
-  .user-icon-button ion-icon {
-    width: 28px;
-    height: 28px;
-  }
-}
-
-
-#main-content {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-ion-content {
-  flex-grow: 1;
-  --padding-top: 0;
 }
 </style>
