@@ -31,11 +31,6 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/InfoUser.vue')
       },
       {
-        path: '/editplay',
-        name: 'editplay',
-        component: () => import('@/views/EditPlay.vue')
-      },
-      {
         path: '/infoFavourites',
         name: 'infoFavourites',
         component: () => import('@/views/InfoFavourites.vue')
@@ -46,6 +41,16 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/CreatePlay.vue')
       },
       {
+        path: '/manageContent',
+        name: 'manageContent',
+        component: () => import('@/views/ManageContent.vue')
+      },
+      {
+        path: '/editPlay',
+        name: 'editPlay',
+        component: () => import('@/views/EditPlay.vue')
+      },
+      {
         path: '/register',
         name: 'Register',
         component: () => import('@/views/Register.vue') // Verifica que esta ruta sea correcta
@@ -54,17 +59,7 @@ const routes: Array<RouteRecordRaw> = [
         path: '/login',
         name: 'Login',
         component: () => import('@/views/login.vue') // Verifica que esta ruta sea correcta
-      },
-      {
-        path: '/MoviesPage',
-        name: 'MoviesPage',
-        component: () => import('@/views/MoviesPage.vue') // Verifica que esta ruta sea correcta
-      },
-      {
-        path: '/ManageContent',
-        name: 'ManageContent',
-        component: () => import('@/views/ManageContent.vue') // Verifica que esta ruta sea correcta
-      },
+      }
     ]
   }
 ]
